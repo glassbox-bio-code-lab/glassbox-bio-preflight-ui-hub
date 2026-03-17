@@ -1,0 +1,2 @@
+index,smiles,canonical_smiles,p_act,p_act_std,qed,mw,logp,tpsa,sa,hbd,hba,rotb,lipinski,esol_logS,herg_risk,clearance_risk,pains_hits,alert_hits,warhead_flags,composite_score
+0,COc1ccc(-c2nc(C(N)=O)c3ccc(Cl)cc3n2)cc1,COc1ccc(-c2nc(C(N)=O)c3ccc(Cl)cc3n2)cc1,0.1875,0.045187283860458796,0.8057454634556243,313.744,3.0577000000000005,78.10000000000001,1.798828125,1.0,4.0,3.0,True,-7.5000468181818185,medium,low,,,,0.4498348033639061

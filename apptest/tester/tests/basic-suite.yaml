@@ -1,0 +1,22 @@
+actions:
+  - name: Health endpoint returns ok
+    bashTest:
+      script: |-
+        curl -fsSL "$APP_BASE_URL/api/health" | jq -r '.status'
+      expect:
+        stdout:
+          exactly: "ok"
+  - name: Config endpoint reports in-cluster mode
+    bashTest:
+      script: |-
+        curl -fsSL "$APP_BASE_URL/api/config" | jq -r '.inCluster'
+      expect:
+        stdout:
+          exactly: "true"
+  - name: Module registry exposes the canonical computational entry
+    bashTest:
+      script: |-
+        curl -fsSL "$APP_BASE_URL/api/modules" | jq -r '.modules[] | select(.id=="computational") | .id' | head -n1
+      expect:
+        stdout:
+          exactly: "computational"

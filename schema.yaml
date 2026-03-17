@@ -1,0 +1,112 @@
+x-google-marketplace:
+  schemaVersion: v2
+  applicationApiVersion: v1beta1
+  publishedVersion: "1.0.0"
+  publishedVersionMetadata:
+    releaseNote: Initial release for the standalone Glassbox Preflight UI.
+    releaseTypes:
+      - Feature
+    recommended: true
+  images:
+    "":
+      properties:
+        image.repository:
+          type: REPO_WITH_REGISTRY
+        image.tag:
+          type: TAG
+    tester:
+      properties:
+        apptest.image.repository:
+          type: REPO_WITH_REGISTRY
+        apptest.image.tag:
+          type: TAG
+
+properties:
+  name:
+    type: string
+    title: Application name
+    x-google-marketplace:
+      type: NAME
+
+  namespace:
+    type: string
+    title: Kubernetes namespace
+    x-google-marketplace:
+      type: NAMESPACE
+
+  service.type:
+    type: string
+    title: Service type
+    enum:
+      - ClusterIP
+      - LoadBalancer
+      - NodePort
+    default: ClusterIP
+
+  service.port:
+    type: integer
+    title: Service port
+    default: 8080
+    minimum: 1
+    maximum: 65535
+
+  app.authDisabled:
+    type: boolean
+    title: Disable API token auth
+    default: true
+
+  persistence.size:
+    type: string
+    title: Shared storage size
+    default: 20Gi
+    pattern: '^[1-9][0-9]*(\.[0-9]+)?[TGM]i?$'
+
+  persistence.storageClassName:
+    type: string
+    title: StorageClass
+    description: Leave blank to use the cluster default StorageClass.
+    default: ""
+    x-google-marketplace:
+      type: STORAGE_CLASS
+      storageClass:
+        type: SSD
+
+  app.runnerImage:
+    type: string
+    title: Default molecular audit runtime image
+    default: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-audit/glassbox-mol-audit:1.0.0
+
+  app.runnerServiceAccount:
+    type: string
+    title: Runtime Job service account
+    default: ""
+
+  app.runnerAppFullname:
+    type: string
+    title: Existing molecular audit app fullname
+    default: ""
+
+  app.modulesJson:
+    type: string
+    title: Module registry override JSON
+    default: ""
+
+  app.addonsJson:
+    type: string
+    title: Add-on registry override JSON
+    default: ""
+
+  app.ipftoRunnerImage:
+    type: string
+    title: IP/FTO add-on runner image
+    default: ""
+
+  addons.ipfto.projectsDir:
+    type: string
+    title: IP/FTO workspace root
+    description: Absolute path inside the shared volume where IP/FTO project workspaces live. Required for the add-on to resolve <project>/raw/step2a_structured_search artifacts.
+    default: ""
+
+required:
+  - name
+  - namespace

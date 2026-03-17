@@ -1,0 +1,5 @@
+apptest:
+  enabled: true
+
+app:
+  authDisabled: true

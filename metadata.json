@@ -1,0 +1,5 @@
+{
+  "name": "Glassbox Preflight Certifier™",
+  "description": "Input Compatibility Certification for the Glassbox Pipeline. Validates schemas, formats, and consistency for biotech data inputs.",
+  "requestFramePermissions": []
+}

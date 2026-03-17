@@ -1,0 +1,78 @@
+x-google-marketplace:
+  schemaVersion: v2
+  applicationApiVersion: v1beta1
+  publishedVersion: "1.0.0"
+  images:
+    "":
+      properties:
+        image.repository:
+          type: REPO_WITH_REGISTRY
+        image.tag:
+          type: TAG
+    tester:
+      properties:
+        apptest.image.repository:
+          type: REPO_WITH_REGISTRY
+        apptest.image.tag:
+          type: TAG
+
+properties:
+  name:
+    type: string
+    x-google-marketplace:
+      type: NAME
+    default: glassbox-preflight-test
+
+  namespace:
+    type: string
+    x-google-marketplace:
+      type: NAMESPACE
+    default: glassbox-preflight-test
+
+  service.type:
+    type: string
+    default: ClusterIP
+
+  service.port:
+    type: integer
+    default: 8080
+
+  app.authDisabled:
+    type: boolean
+    default: true
+
+  persistence.size:
+    type: string
+    default: 20Gi
+
+  persistence.storageClassName:
+    type: string
+    default: ""
+
+  app.runnerImage:
+    type: string
+    default: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-audit/glassbox-mol-audit:1.0.0
+
+  app.runnerServiceAccount:
+    type: string
+    default: ""
+
+  app.runnerAppFullname:
+    type: string
+    default: ""
+
+  app.modulesJson:
+    type: string
+    default: ""
+
+  app.addonsJson:
+    type: string
+    default: ""
+
+  app.ipftoRunnerImage:
+    type: string
+    default: ""
+
+required:
+  - name
+  - namespace
