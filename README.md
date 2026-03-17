@@ -25,7 +25,7 @@ ongoing product development.
 - `metadata.json`
   - package metadata
 
-## Product Scope
+## What is the Glassbox Bio Preflight UI Hub?
 
 Glassbox Bio Preflight UI Hub is the operator-facing control surface for
 preparing and managing Glassbox Molecular Audit runs in Kubernetes.
