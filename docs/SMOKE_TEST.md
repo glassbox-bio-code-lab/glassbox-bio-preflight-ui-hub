@@ -26,10 +26,16 @@ helm template glassbox-preflight chart/preflight
 
 ## Install
 
+Choose an operator token and pass it at install time. The chart defaults to
+API-token auth enabled.
+
 ```bash
+export GBX_PREFLIGHT_TOKEN="change-me-before-real-use"
+
 helm upgrade --install glassbox-preflight chart/preflight \
   --namespace glassbox-preflight \
-  --create-namespace
+  --create-namespace \
+  --set app.authToken="$GBX_PREFLIGHT_TOKEN"
 ```
 
 ## Wait For Readiness
@@ -52,7 +58,32 @@ In another shell:
 curl -fsSL http://127.0.0.1:8080/api/health
 curl -fsSL http://127.0.0.1:8080/api/config
 curl -fsSL http://127.0.0.1:8080/api/modules
+curl -fsSL -H "Authorization: Bearer $GBX_PREFLIGHT_TOKEN" \
+  "http://127.0.0.1:8080/api/runs/check?runId=smoke-test"
 ```
+
+## Verify The Shipped Core Runner Image
+
+Launch a lightweight smoke Job that proves the configured runner image can pull
+and resolve `python3 -m app.gbx_core_runner_v3` without starting a scientific
+run.
+
+```bash
+curl -fsSL -X POST \
+  -H "Authorization: Bearer $GBX_PREFLIGHT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace":"glassbox-preflight"}' \
+  "http://127.0.0.1:8080/api/modules/computational/smoke"
+
+curl -fsSL -H "Authorization: Bearer $GBX_PREFLIGHT_TOKEN" \
+  "http://127.0.0.1:8080/api/modules/computational/status?namespace=glassbox-preflight"
+```
+
+Look for:
+
+- `runnerImage` matching the shipped core runtime image
+- `execution.state = "verified"` after the smoke job completes
+- `execution.lastSuccessfulJob.name` populated
 
 ## Expected Success Criteria
 
@@ -60,3 +91,6 @@ curl -fsSL http://127.0.0.1:8080/api/modules
 - `/api/health` returns `status=ok`
 - `/api/config` reports `inCluster=true`
 - `/api/modules` contains the `computational` module
+- the authenticated `/api/runs/check` request returns `status=ok`
+- the computational smoke endpoint creates a job successfully
+- `/api/modules/computational/status` eventually reports `execution.state=verified`

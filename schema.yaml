@@ -53,13 +53,28 @@ properties:
   app.authDisabled:
     type: boolean
     title: Disable API token auth
-    default: true
+    description: Only disable auth for trusted internal ClusterIP installs. Externally exposed service types should keep auth enabled.
+    default: false
+
+  app.authToken:
+    type: string
+    title: Operator API token
+    description: Required when API token auth is enabled. Use this token in the Preflight UI sidebar and for authenticated API calls.
+    default: ""
 
   persistence.size:
     type: string
     title: Shared storage size
     default: 20Gi
     pattern: '^[1-9][0-9]*(\.[0-9]+)?[TGM]i?$'
+
+  persistence.accessMode:
+    type: string
+    title: Shared storage access mode
+    enum:
+      - ReadWriteOnce
+      - ReadWriteMany
+    default: ReadWriteOnce
 
   persistence.storageClassName:
     type: string
@@ -106,6 +121,12 @@ properties:
     title: IP/FTO workspace root
     description: Absolute path inside the shared volume where IP/FTO project workspaces live. Required for the add-on to resolve <project>/raw/step2a_structured_search artifacts.
     default: ""
+
+  application.enabled:
+    type: boolean
+    title: Create Kubernetes Application resource
+    description: Keep enabled for Google Cloud Marketplace/AppRegistry installs. Disable for generic Helm environments that do not support app.k8s.io Application resources.
+    default: true
 
 required:
   - name

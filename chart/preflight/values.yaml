@@ -16,7 +16,8 @@ service:
   port: 8080
 
 app:
-  authDisabled: true
+  authDisabled: false
+  authToken: ""
   inputRoot: /data/input
   outputRoot: /data/output
   runnerImage: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-audit/glassbox-mol-audit:1.0.0
@@ -273,7 +274,11 @@ addons:
 
 persistence:
   size: 20Gi
+  accessMode: ReadWriteOnce
   storageClassName: ""
+
+application:
+  enabled: true
 
 resources:
   requests:

@@ -26,6 +26,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ printf "%s-config" (include "preflight.fullname" .) | quote }}
+            {{- if not .Values.app.authDisabled }}
+            - secretRef:
+                name: {{ printf "%s-auth" (include "preflight.fullname" .) | quote }}
+            {{- end }}
           env:
             - name: NODE_ENV
               value: "production"

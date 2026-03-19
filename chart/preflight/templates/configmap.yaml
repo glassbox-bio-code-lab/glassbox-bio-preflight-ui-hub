@@ -1,3 +1,9 @@
+{{- if and .Values.app.authDisabled (ne .Values.service.type "ClusterIP") }}
+{{- fail "app.authDisabled=true is only supported when service.type=ClusterIP." }}
+{{- end }}
+{{- if and (not .Values.app.authDisabled) (not (.Values.app.authToken | trim)) }}
+{{- fail "Set app.authToken when app.authDisabled=false." }}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -20,6 +26,7 @@ data:
   GBX_STORAGE_TYPE: "pvc"
   GBX_GCS_BUCKET: ""
   GBX_GCS_MOUNT_PATH: "/data"
+  GBX_PREFLIGHT_SELECTOR_LABELS: {{ dict "app.kubernetes.io/name" (include "preflight.name" .) "app.kubernetes.io/instance" .Release.Name | toJson | quote }}
   GBX_MODULES_JSON: {{ default (toJson .Values.modules.registry) .Values.app.modulesJson | quote }}
   GBX_ADDONS_JSON: {{ default (toJson .Values.addons.registry) .Values.app.addonsJson | quote }}
   GBX_DEV_K8S_ADMIN_API: {{ ternary "true" "false" .Values.app.devAdminApi | quote }}

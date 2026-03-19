@@ -25,7 +25,7 @@ ongoing product development.
 - `metadata.json`
   - package metadata
 
-## What is the Glassbox Bio Preflight UI Hub?
+## Product Scope
 
 Glassbox Bio Preflight UI Hub is the operator-facing control surface for
 preparing and managing Glassbox Molecular Audit runs in Kubernetes.
@@ -53,6 +53,11 @@ not fabricate scientific outputs.
 - this repo provides the deployment and operator contract for that image
 - deployment uses the Helm chart under `chart/preflight/`
 - Marketplace packaging uses `deployer/`, `apptest/`, and `schema.yaml`
+- API-token auth is enabled by default. Set `app.authToken` at install time.
+- `app.authDisabled=true` is supported only for trusted internal `ClusterIP` installs.
+- the default shared-storage contract is PVC-backed. With `ReadWriteOnce`, launched Jobs are co-located with the Preflight pod to keep `/data` consistent on multi-node clusters.
+- set `persistence.accessMode=ReadWriteMany` if your storage class supports RWX
+- disable `application.enabled` only when installing into non-Marketplace environments that do not support `app.k8s.io/Application`
 
 ## Support
 

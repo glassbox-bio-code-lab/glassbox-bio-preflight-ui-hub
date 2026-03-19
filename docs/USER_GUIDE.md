@@ -24,10 +24,12 @@ The current schema requires `sources.json`.
 
 Supporting files such as `portfolio_selected.csv`, `compounds.csv`,
 `targets.csv`, `assays.csv`, and `single_target.json` are accepted when
-provided and validated against the active schema/example set in:
+provided and validated against the active schema/example bundle shipped inside
+the Preflight runtime image.
 
-- `server/schema/current/schema.json`
-- `server/schema/current/examples/*`
+For the public operator-facing reference set, use the sample input bundle under:
+
+- `sample_input/sample_input/`
 
 ### Validation Flow
 
@@ -63,22 +65,22 @@ Optional but commonly used:
 
 ### Auth
 
-If `K8S_AUTH_DISABLED=false`, pod/log access requires a token.
+If `K8S_AUTH_DISABLED=false`, the control plane requires a token for validation,
+run launch, add-on execution, output browsing/download, billing status, and
+pod/log access.
 
 - HTTP: `Authorization: Bearer <token>`
 - WebSocket: `WS /ws/k8s/logs?...&token=<token>`
+- Browser download links: `GET ...?token=<token>`
 
-Configure tokens with:
-
-- `K8S_API_TOKENS`
-- `K8S_API_TOKENS_FILE`
-- `K8S_API_TOKEN`
+The shipped chart provisions a single operator token through `app.authToken`,
+which the backend exposes as `K8S_API_TOKEN`.
 
 Roles:
 
-- `viewer`: pods and logs
-- `operator`: pods, logs, run actions
-- `admin`: pods, logs, run actions, secret write
+- `viewer`: billing status, run readiness, add-on discovery, outputs, pods, and logs
+- `operator`: viewer access plus validation, runpack generation, input staging, core runs, add-on runs, and feedback submission
+- `admin`: operator access plus secret write and dev-only admin actions
 
 ### Billing Readiness
 
@@ -101,7 +103,9 @@ checks for required core outputs before allowing an add-on launch.
 
 Current behavior:
 
-- install status distinguishes `installed` from `runnable`
+- install status distinguishes `installed`, `launchReady`, and `executionVerified`
+- `launchReady` means the namespace install contract is satisfied and the add-on can be launched
+- `executionVerified` means a successful add-on Job has already been observed in the namespace
 - core output readiness is checked via `GET /api/runs/check`
 - only runnable add-ons launch through their configured start endpoints
 - premium add-ons can surface as `locked` until their namespace install resources exist
@@ -201,6 +205,20 @@ The UI exposes quick links for common artifacts such as:
 - wetlab readiness JSON
 - seal records
 
+### Core Runner Verification
+
+The control plane also exposes a lightweight runtime-image verification path for
+operators who want to prove the shipped core runner image resolves the published
+entrypoint before launching a real run.
+
+- `GET /api/modules/:moduleId/status`
+  - returns the configured runner image and the most recent observed execution
+    status for that module in the namespace
+- `POST /api/modules/:moduleId/smoke`
+  - creates a short-lived Job that runs `python3 -m <pythonModule> --help`
+  - this verifies image pull, interpreter startup, and module import/CLI wiring
+    without launching a scientific run
+
 ## Dev-Only Administrative Endpoints
 
 The following endpoints are intentionally not the normal product path and are
@@ -215,7 +233,18 @@ disabled unless `GBX_DEV_K8S_ADMIN_API=true`:
 - The Marketplace deployer build lives at `deployer/Dockerfile`
 - Verification overlay files live under `apptest/deployer` and `apptest/tester`
 - The backend uses in-cluster service-account-backed `kubectl` access
-- The clean restart currently packages PVC-backed shared storage only
+- The shipped chart defaults to a shared PVC contract. With the default
+  `ReadWriteOnce` mode, the control plane co-locates launched Jobs onto the
+  same node as the Preflight pod so `/data` remains consistent on multi-node
+  clusters.
+- If your storage class supports `ReadWriteMany`, set `persistence.accessMode`
+  accordingly.
+- `app.authDisabled=true` is supported only for trusted internal `ClusterIP`
+  installs. Externally reachable service types should keep auth enabled and set
+  `app.authToken`.
+- The chart emits an `Application` resource by default for Marketplace /
+  AppRegistry installs. Disable it with `application.enabled=false` for generic
+  Helm environments that do not support `app.k8s.io` resources.
 - The app can run standalone or as a sibling deployment that shares namespace,
   storage, runner image, and runner service-account conventions with the
   molecular audit stack
