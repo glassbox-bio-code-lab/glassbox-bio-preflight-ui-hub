@@ -69,10 +69,6 @@ properties:
     type: string
     default: ""
 
-  app.ipftoRunnerImage:
-    type: string
-    default: ""
-
 required:
   - name
   - namespace
