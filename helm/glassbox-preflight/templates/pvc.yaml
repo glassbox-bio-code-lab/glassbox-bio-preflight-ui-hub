@@ -1,0 +1,20 @@
+{{- $existingClaim := default .Values.app.dataPvc .Values.storage.pvc.existingClaim -}}
+{{- if and (eq .Values.storage.type "pvc") (not $existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "preflight.dataClaimName" . | quote }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "preflight.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ default .Values.persistence.accessMode .Values.storage.pvc.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ default .Values.persistence.size .Values.storage.pvc.size | quote }}
+  {{- $storageClassName := default .Values.persistence.storageClassName .Values.storage.pvc.storageClassName -}}
+  {{- if $storageClassName }}
+  storageClassName: {{ $storageClassName | quote }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "preflight.fullname" . | quote }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "preflight.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "preflight.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "preflight.selectorLabels" . | nindent 8 }}
+      {{- if eq .Values.storage.type "gcs" }}
+      annotations:
+        gke-gcsfuse/volumes: "true"
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "preflight.serviceAccountName" . | quote }}
+      {{- if .Values.runtimeTools.enabled }}
+      initContainers:
+        - name: runtime-tools
+          image: {{ include "preflight.image" .Values.runtimeTools.image | quote }}
+          imagePullPolicy: {{ .Values.runtimeTools.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              apt-get update
+              apt-get install -y --no-install-recommends ca-certificates curl tar busybox-static
+              mkdir -p {{ .Values.runtimeTools.installPath | quote }}
+              curl -fsSL -o {{ printf "%s/kubectl" .Values.runtimeTools.installPath }} "https://dl.k8s.io/release/{{ .Values.runtimeTools.kubectlVersion }}/bin/linux/amd64/kubectl"
+              chmod +x {{ printf "%s/kubectl" .Values.runtimeTools.installPath }}
+              curl -fsSL -o /tmp/helm.tgz "https://get.helm.sh/helm-{{ .Values.runtimeTools.helmVersion }}-linux-amd64.tar.gz"
+              tar -xzf /tmp/helm.tgz -C /tmp
+              mv /tmp/linux-amd64/helm {{ printf "%s/helm" .Values.runtimeTools.installPath }}
+              chmod +x {{ printf "%s/helm" .Values.runtimeTools.installPath }}
+              cp /bin/busybox {{ printf "%s/busybox" .Values.runtimeTools.installPath }}
+              chmod +x {{ printf "%s/busybox" .Values.runtimeTools.installPath }}
+              ln -sf {{ printf "%s/busybox" .Values.runtimeTools.installPath }} {{ printf "%s/tar" .Values.runtimeTools.installPath }}
+          volumeMounts:
+            - name: runtime-tools
+              mountPath: {{ .Values.runtimeTools.installPath | quote }}
+      {{- end }}
+      containers:
+        - name: preflight
+          image: {{ include "preflight.image" .Values.image | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+          envFrom:
+            - configMapRef:
+                name: {{ printf "%s-config" (include "preflight.fullname" .) | quote }}
+            {{- if not .Values.app.authDisabled }}
+            - secretRef:
+                name: {{ include "preflight.authSecretName" . | quote }}
+            {{- end }}
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            {{- if .Values.runtimeTools.enabled }}
+            - name: PATH
+              value: {{ printf "%s:/usr/local/bin:/usr/bin:/bin" .Values.runtimeTools.installPath | quote }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          {{- if eq .Values.storage.type "gcs" }}
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.storage.gcs.mountPath | quote }}
+            {{- if .Values.runtimeTools.enabled }}
+            - name: runtime-tools
+              mountPath: {{ .Values.runtimeTools.installPath | quote }}
+              readOnly: true
+            {{- end }}
+          {{- else }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            {{- if .Values.runtimeTools.enabled }}
+            - name: runtime-tools
+              mountPath: {{ .Values.runtimeTools.installPath | quote }}
+              readOnly: true
+            {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        {{- if .Values.runtimeTools.enabled }}
+        - name: runtime-tools
+          emptyDir: {}
+        {{- end }}
+        {{- if eq .Values.storage.type "gcs" }}
+        - name: data
+          csi:
+            driver: {{ .Values.storage.gcs.csiDriver | quote }}
+            readOnly: {{ ternary true false .Values.storage.gcs.readOnly }}
+            volumeAttributes:
+              bucketName: {{ .Values.storage.gcs.bucket | quote }}
+              implicitDirs: "true"
+              implicit-dirs: "true"
+              mountOptions: "implicit-dirs"
+              gcsfuseOptions: "implicit-dirs"
+        {{- else }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "preflight.dataClaimName" . | quote }}
+        {{- end }}

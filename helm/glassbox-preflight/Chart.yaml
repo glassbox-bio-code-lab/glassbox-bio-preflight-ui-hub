@@ -1,0 +1,6 @@
+apiVersion: v2
+name: glassbox-preflight
+description: Customer-facing Glassbox Preflight chart for deploying the public image in customer-managed clusters.
+type: application
+version: 0.1.0
+appVersion: "20260321-223300"

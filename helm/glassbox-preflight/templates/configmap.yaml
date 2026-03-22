@@ -1,0 +1,57 @@
+{{- if and .Values.app.authDisabled (ne .Values.service.type "ClusterIP") }}
+{{- fail "app.authDisabled=true is only supported when service.type=ClusterIP." }}
+{{- end }}
+{{- if and (eq .Values.storage.type "gcs") (not (.Values.storage.gcs.bucket | trim)) }}
+{{- fail "Set storage.gcs.bucket when storage.type=gcs." }}
+{{- end }}
+{{- if and .Values.billing.enabled (not (.Values.billing.marketplaceReportingSecret | trim)) }}
+{{- fail "Set billing.marketplaceReportingSecret when billing.enabled=true." }}
+{{- end }}
+{{- if and .Values.billing.enabled (not (.Values.billing.ubbagent.serviceName | trim)) }}
+{{- fail "Set billing.ubbagent.serviceName when billing.enabled=true." }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "preflight.fullname" . }}-config
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "preflight.labels" . | nindent 4 }}
+data:
+  PORT: {{ .Values.service.port | quote }}
+  K8S_INCLUSTER: "true"
+  K8S_AUTH_DISABLED: {{ ternary "true" "false" .Values.app.authDisabled | quote }}
+  GBX_PUBLIC_VERIFICATION: {{ ternary "true" "false" (default true .Values.app.publicVerification) | quote }}
+  K8S_COMMAND_RETRIES: "2"
+  K8S_COMMAND_BACKOFF_MS: "400"
+  GBX_INPUT_ROOT: {{ .Values.app.inputRoot | quote }}
+  GBX_OUTPUT_ROOT: {{ .Values.app.outputRoot | quote }}
+  GBX_PUBLIC_APP_URL: {{ .Values.app.publicAppUrl | quote }}
+  GBX_PUBLIC_API_URL: {{ .Values.app.publicApiUrl | quote }}
+  GBX_ENTITLEMENT_URL: {{ .Values.app.entitlementUrl | quote }}
+  GBX_ENTITLEMENT_AUTH_MODE: {{ .Values.app.entitlementAuthMode | quote }}
+  GBX_ENTITLEMENT_AUDIENCE: {{ .Values.app.entitlementAudience | quote }}
+  GBX_ENTITLEMENT_TIMEOUT_SEC: {{ .Values.app.entitlementTimeoutSec | quote }}
+  GBX_RUNNER_IMAGE: {{ .Values.app.runnerImage | quote }}
+  GBX_RUNNER_SERVICE_ACCOUNT: {{ default (include "preflight.serviceAccountName" .) .Values.app.runnerServiceAccount | quote }}
+  GBX_APP_FULLNAME: {{ default (include "preflight.fullname" .) .Values.app.runnerAppFullname | quote }}
+  GBX_DATA_PVC: {{ ternary "" (include "preflight.dataClaimName" .) (eq .Values.storage.type "gcs") | quote }}
+  GBX_STORAGE_TYPE: {{ .Values.storage.type | quote }}
+  GBX_GCS_BUCKET: {{ .Values.storage.gcs.bucket | quote }}
+  GBX_GCS_MOUNT_PATH: {{ .Values.storage.gcs.mountPath | quote }}
+  GBX_PREFLIGHT_SELECTOR_LABELS: {{ dict "app.kubernetes.io/name" (include "preflight.name" .) "app.kubernetes.io/instance" .Release.Name | toJson | quote }}
+  GBX_MODULES_JSON: {{ default (toJson .Values.modules.registry) .Values.app.modulesJson | quote }}
+  GBX_ADDONS_JSON: {{ default (toJson .Values.addons.registry) .Values.app.addonsJson | quote }}
+  GBX_DEV_K8S_ADMIN_API: {{ ternary "true" "false" .Values.app.devAdminApi | quote }}
+  UBBAGENT_ENABLED: {{ ternary "true" "false" .Values.billing.enabled | quote }}
+  MARKETPLACE_REPORTING_SECRET: {{ .Values.billing.marketplaceReportingSecret | quote }}
+  UBBAGENT_IMAGE: {{ include "preflight.image" .Values.billing.ubbagent.image | quote }}
+  UBBAGENT_PULL_POLICY: {{ .Values.billing.ubbagent.image.pullPolicy | quote }}
+  UBBAGENT_LOCAL_PORT: {{ .Values.billing.ubbagent.localPort | quote }}
+  UBBAGENT_METRIC_NAME: {{ .Values.billing.ubbagent.metricName | quote }}
+  UBBAGENT_METRIC_NAME_STANDARD: {{ .Values.billing.ubbagent.metricNameStandard | quote }}
+  UBBAGENT_METRIC_NAME_DEEP: {{ .Values.billing.ubbagent.metricNameDeep | quote }}
+  GBX_FEEDBACK_WEBHOOK_URL: {{ .Values.app.feedback.webhookUrl | quote }}
+  GBX_FEEDBACK_WEBHOOK_BEARER_TOKEN: {{ .Values.app.feedback.webhookBearerToken | quote }}
+  GBX_FEEDBACK_WEBHOOK_SHARED_SECRET: {{ .Values.app.feedback.webhookSharedSecret | quote }}
+  GBX_FEEDBACK_WEBHOOK_TIMEOUT_MS: {{ .Values.app.feedback.webhookTimeoutMs | quote }}
