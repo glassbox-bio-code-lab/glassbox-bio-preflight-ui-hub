@@ -1,78 +1,56 @@
-# Glassbox Bio Preflight UI Hub
+# Customer Deploy Bundle
 
-This repository is the customer-facing deployment bundle for the
-**Glassbox Bio Preflight UI Hub**.
+This directory is the customer-facing deployment package for Glassbox Preflight.
 
-It contains the packaging, configuration, documentation, and sample assets
-required to deploy and operate the product in Kubernetes. It intentionally does
-not contain the private frontend/backend application source used by Glassbox for
-ongoing product development.
+It is intended for the public repo where customer operators will:
 
-## What This Repo Includes
+- pull the public preflight image from Artifact Registry
+- install the Helm chart into their own cluster
+- provide their own ingress, storage, and auth values
 
-- `chart/preflight/`
-  - Helm chart for deployment
-- `deployer/`
-  - Marketplace deployer build context
-- `apptest/`
-  - Marketplace verification/test assets
-- `schema.yaml`
-  - Marketplace deployer schema
-- `docs/`
-  - operator documentation and support references
-- `sample_input/`
-  - example validation bundle
-- `metadata.json`
-  - package metadata
+## Layout
 
-## Product Scope
+- `helm/glassbox-preflight/`: customer Helm chart
+- `examples/customer-values.yaml`: starter values overlay
 
-Glassbox Bio Preflight UI Hub is the operator-facing control surface for
-preparing and managing Glassbox Molecular Audit runs in Kubernetes.
+## Public Image
 
-It validates real uploaded inputs against the active schema, generates a
-deterministic ready-to-run pack, launches the canonical audit runner, streams
-live Kubernetes logs, and allows operators to browse and download produced
-artifacts from shared storage. It can also launch registry-defined post-core
-add-ons against an existing run ID.
+Default chart image:
 
-The product is a run-control and certification interface over the Glassbox
-execution stack. It does not replace the canonical scientific runner and does
-not fabricate scientific outputs.
+- `us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-preflight-ui-hub/glassbox-preflight:`
 
-## Start Here
+This public image does not bake `kubectl` or `helm` into the container image.
+The customer chart downloads runtime tools into a shared volume at pod startup
+through the `runtimeTools` init container.
 
-- operator guide: `docs/USER_GUIDE.md`
-- smoke test: `docs/SMOKE_TEST.md`
-- product description seed: `docs/marketplace_description.md`
-- product/package specs: `docs/specs.md`
+## Install
 
-## Deployment Notes
+```bash
+helm upgrade --install glassbox-preflight \
+  ./helm/glassbox-preflight \
+  --namespace glassbox-preflight \
+  --create-namespace \
+  -f ./examples/customer-values.yaml
+```
 
-- customers deploy the published Glassbox runtime image into their own cluster
-- this repo provides the deployment and operator contract for that image
-- deployment uses the Helm chart under `chart/preflight/`
-- Marketplace packaging uses `deployer/`, `apptest/`, and `schema.yaml`
-- API-token auth is enabled by default. Set `app.authToken` at install time.
-- `app.authDisabled=true` is supported only for trusted internal `ClusterIP` installs.
-- the default shared-storage contract is PVC-backed. With `ReadWriteOnce`, launched Jobs are co-located with the Preflight pod to keep `/data` consistent on multi-node clusters.
-- set `persistence.accessMode=ReadWriteMany` if your storage class supports RWX
-- disable `application.enabled` only when installing into non-Marketplace environments that do not support `app.k8s.io/Application`
+## Customer Inputs
 
-## Support
+Customers should review and override:
 
-Use the product documentation for installation, validation workflow, runtime
-launch, output browsing, and packaged add-on setup. When opening a support
-request, include:
+- `image.tag` or `image.digest`
+- `auth.tokensJson` or `auth.existingSecret`
+- `ingress.*`
+- `storage.*`
+- `app.publicAppUrl`
+- `app.publicApiUrl`
+- `app.entitlementUrl`
+- `app.entitlementAuthMode`
+- `app.runnerImage`
+- `app.runnerServiceAccount`
 
-- product version
-- namespace
-- run ID
-- error message
-- relevant pod / job logs
+## Notes
 
-## Provenance And Integrity
-
-Glassbox Bio Preflight UI Hub validates and orchestrates real uploaded inputs.
-It must not fabricate scientific evidence or substitute synthetic data for
-missing required inputs.
+- `application.enabled=false` by default because customer clusters should not
+  need the Kubernetes `Application` CRD.
+- `addons.ipfto.enabled=false` by default in the customer package.
+- Billing remains disabled by default.
