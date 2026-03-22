@@ -3,6 +3,7 @@ ARG GOLANG_BUILD_IMAGE=golang:1.25.8
 ARG HELM_VERSION=v3.20.1
 ARG KUBECTL_130_VERSION=v1.30.14
 ARG KUBECTL_131_VERSION=v1.31.14
+ARG MP_SERVICE_NAME=services/molecular-audit-core.endpoints.glassbox-bio-public.cloud.goog
 
 FROM ${GOLANG_BUILD_IMAGE} AS kubectl-130-builder
 ARG KUBECTL_130_VERSION
@@ -35,6 +36,8 @@ FROM ${DEPLOYER_BASE_IMAGE}
 ARG HELM_VERSION
 ARG KUBECTL_130_VERSION
 ARG KUBECTL_131_VERSION
+ARG MP_SERVICE_NAME
+LABEL com.googleapis.cloudmarketplace.product.service.name=${MP_SERVICE_NAME}
 
 RUN apt-get update \
     && apt-get dist-upgrade -y \
