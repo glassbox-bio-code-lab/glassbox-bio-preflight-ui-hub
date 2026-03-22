@@ -17,7 +17,7 @@ It is intended for the public repo where customer operators will:
 
 Default chart image:
 
-- `us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-preflight-ui-hub/glassbox-preflight:`
+- `us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-preflight-ui-hub/glassbox-preflight:1.0.0`
 
 This public image does not bake `kubectl` or `helm` into the container image.
 The customer chart downloads runtime tools into a shared volume at pod startup
