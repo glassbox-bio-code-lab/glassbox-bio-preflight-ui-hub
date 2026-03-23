@@ -48,6 +48,10 @@ properties:
   persistence.storageClassName:
     type: string
     default: ""
+    x-google-marketplace:
+      type: STORAGE_CLASS
+      storageClass:
+        type: SSD
 
   app.runnerImage:
     type: string
@@ -66,6 +70,10 @@ properties:
     default: ""
 
   app.addonsJson:
+    type: string
+    default: ""
+
+  app.ipftoRunnerImage:
     type: string
     default: ""
 
