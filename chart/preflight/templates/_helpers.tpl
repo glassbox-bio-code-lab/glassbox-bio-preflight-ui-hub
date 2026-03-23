@@ -3,14 +3,13 @@ glassbox-preflight
 {{- end -}}
 
 {{- define "preflight.fullname" -}}
-{{- printf "%s-preflight" .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{- define "preflight.labels" -}}
 app.kubernetes.io/name: {{ include "preflight.name" . }}
-helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/part-of: glassbox-marketplace
 {{- end -}}
 
 {{- define "preflight.selectorLabels" -}}
