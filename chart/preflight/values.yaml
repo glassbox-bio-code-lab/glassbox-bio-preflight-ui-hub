@@ -7,7 +7,6 @@ image:
 serviceAccount:
   create: true
   name: ""
-  annotations: {}
 
 rbac:
   create: true
@@ -16,47 +15,20 @@ service:
   type: ClusterIP
   port: 8080
 
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-  hosts:
-    - host: preflight.local
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
-
-networkPolicy:
-  enabled: false
-  allowSameNamespace: true
-  ingressControllerNamespaceLabels: {}
-  ingressControllerPodLabels: {}
-  extraEgressCidrs: []
-  extraEgressNamespaceLabels: []
-
-auth:
-  existingSecret: ""
-  tokensJson: ""
-
 app:
   authDisabled: false
-  publicVerification: true
   authToken: ""
   inputRoot: /data/input
   outputRoot: /data/output
-  publicAppUrl: ""
-  publicApiUrl: ""
-  entitlementUrl: ""
-  entitlementAuthMode: ""
-  entitlementAudience: ""
-  entitlementTimeoutSec: ""
   runnerImage: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-audit/glassbox-mol-audit:1.0.0
   runnerServiceAccount: ""
   runnerAppFullname: ""
   dataPvc: ""
   modulesJson: ""
   addonsJson: ""
+  ipftoRunnerImage: ""
+  ipftoServiceAccount: gbx-ipfto-runner
+  ipftoConfigMap: gbx-ipfto-addon
   feedback:
     webhookUrl: ""
     webhookBearerToken: ""
@@ -75,16 +47,6 @@ modules:
       pythonModule: app.gbx_core_runner_v3
       outputsPrefix: ""
       startLabel: Run core audit
-      parametersSchema:
-        type: object
-        title: Computational execution
-        properties:
-          categoryId:
-            type: string
-            title: Category ID
-            description: Required runner category identifier, for example SMALL_MOLECULE__LIGAND_ONLY__NO_STRUCTURE__NO_ASSAYS.
-        required:
-          - categoryId
       quickLinks:
         - path: results/phase_5_computational_safety.html
           label: Safety Report
@@ -100,6 +62,91 @@ modules:
 
 addons:
   registry:
+    - id: ipfto
+      title: IP / Freedom-to-Operate
+      tagline: Deterministic patent diligence and claim similarity review against an existing core run
+      description: Runs as a separate append-only Kubernetes Job, bootstraps its own IP/FTO workspace from the core run outputs, and writes artifacts under 07_addons/ipfto/.
+      accessTier: premium-addon
+      upgradeMessage: Install the IP/FTO add-on image and namespace resources to unlock deterministic post-core patent diligence. The add-on bootstraps its own workspace from real core outputs.
+      outputsPrefix: 07_addons/ipfto
+      quickLinks:
+        - path: 07_addons/ipfto/ipfto_report.html
+          label: IP/FTO Report (HTML)
+          openInNewTab: true
+        - path: 07_addons/ipfto/ipfto_findings.json
+          label: Findings (JSON)
+        - path: 07_addons/ipfto/ipfto_manifest.json
+          label: Add-on Manifest (JSON)
+        - path: 07_addons/ipfto/verification_summary.json
+          label: Verification Summary (JSON)
+      startEndpoint: /api/addons/ipfto/run
+      statusEndpoint: /api/addons/ipfto/status
+      startLabel: Run IP/FTO
+      requireRunId: true
+      parametersSchema:
+        type: object
+        title: IP/FTO execution
+        properties:
+          executionMode:
+            type: string
+            title: Execution mode
+            description: phase2a_only runs deterministic patent evidence search plus claim similarity. full uses the same module-managed bootstrap path and attaches any additional real workspace artifacts that are available.
+            enum:
+              - phase2a_only
+              - full
+            default: phase2a_only
+      prereq:
+        requiredFiles:
+          - results/combined_unified_computational_outputs.json
+      runner:
+        command:
+          - python
+          - -m
+          - ipfto_module.addon_runner
+        args:
+          - --project-id
+          - "{projectId}"
+          - --run-id
+          - "{runId}"
+          - --output-root
+          - "{outputRoot}"
+        env:
+          - name: GBX_ADDON_NAME
+            value: ipfto
+          - name: GBX_ADDON_OUTPUT_SUBDIR
+            value: 07_addons/ipfto
+          - name: GBX_IPFTO_MODE
+            value: "{addonMode}"
+      install:
+        serviceAccountName: gbx-ipfto-runner
+        configMapName: gbx-ipfto-addon
+        runnerImageEnv: GBX_IPFTO_RUNNER_IMAGE
+        runnerImageKey: runnerImage
+        projectsDirKey: projectsDir
+        readyModes:
+          - phase2a_only
+          - full
+        requiredSecrets:
+          - label: LLM credentials
+            anyOfEnvNames:
+              - OPENAI_API_KEY
+              - OPENROUTER_API_KEY
+              - ANTHROPIC_API_KEY
+              - GEMINI_API_KEY
+              - GOOGLE_API_KEY
+            modes:
+              - full
+            code: llm_credentials_missing
+            message: Full IP/FTO mode requires an add-on secret that provides LLM credentials.
+          - label: deterministic patent search credentials
+            anyOfEnvNames:
+              - GBX_GOOGLE_CLOUD_PROJECT
+              - SERPER_API_KEY
+              - SERPAPI_KEY
+            modes:
+              - full
+            code: patent_search_credentials_missing
+            message: Full IP/FTO mode requires Google Patents BigQuery settings or an external patent-search provider secret.
     - id: cim
       title: Continuous Intelligence Monitoring
       tagline: Customer-hosted follow-up monitoring against an existing core run
@@ -207,8 +254,39 @@ addons:
   # Preferred for new add-ons: supply install-time resource values under
   # addons.installations.<addonId>. The chart ranges over addons.registry and
   # renders generic ServiceAccount/ConfigMap resources for any enabled entry.
-  # Legacy per-addon keys remain supported for internal installs.
+  # Legacy per-addon keys like addons.ipfto.* and addons.cim.* remain supported.
   installations: {}
+  ipfto:
+    enabled: true
+    serviceAccountName: gbx-ipfto-runner
+    configMapName: gbx-ipfto-addon
+    serviceAccountAnnotations: {}
+    configData: {}
+    # Optional non-secret runtime config for the IP/FTO add-on. Example:
+    # configData:
+    #   GBX_GOOGLE_PATENTS_SYNC_ENABLED: "1"
+    #   GBX_IPFTO_PRIOR_ART_PROVIDERS: google_patents_bq
+    # Optional secret refs injected directly into the add-on Job environment.
+    # Example:
+    # secretRefs:
+    #   - secretName: gbx-ipfto-runtime
+    #     env:
+    #       - name: OPENAI_API_KEY
+    #         key: OPENAI_API_KEY
+    #       - name: SERPER_API_KEY
+    #         key: SERPER_API_KEY
+    #         optional: true
+    #       - name: GBX_GOOGLE_CLOUD_PROJECT
+    #         key: GBX_GOOGLE_CLOUD_PROJECT
+    secretRefs: []
+    # Optional persistent workspace root. If unset, the add-on bootstraps a
+    # run-scoped workspace under 07_addons/ipfto/_workspace/.
+    projectsDir: ""
+    image:
+      repository: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-preflight-ui-hub/glassbox-preflight/ipfto
+      tag: 1.0.0
+      digest: ""
+      pullPolicy: IfNotPresent
   cim:
     enabled: false
     serviceAccountName: gbx-cim-runner
@@ -222,44 +300,13 @@ addons:
       digest: ""
       pullPolicy: IfNotPresent
 
-storage:
-  type: pvc
-  pvc:
-    existingClaim: ""
-    size: 20Gi
-    accessMode: ReadWriteOnce
-    storageClassName: ""
-  gcs:
-    bucket: ""
-    mountPath: /data
-    csiDriver: gcsfuse.csi.storage.gke.io
-    readOnly: false
-
-# Legacy values retained for compatibility with older install overlays.
 persistence:
   size: 20Gi
   accessMode: ReadWriteOnce
   storageClassName: ""
 
-billing:
-  enabled: false
-  marketplaceReportingSecret: ""
-  ubbagent:
-    image:
-      repository: gcr.io/REPLACE_PROJECT/ubbagent
-      tag: latest
-      digest: ""
-      pullPolicy: IfNotPresent
-    localPort: "4567"
-    metricName: glassbox_mol_audit_run
-    metricNameStandard: standard_audit_run
-    metricNameDeep: deep_audit_run
-    serviceName: ""
-
 application:
   enabled: true
-
-replicaCount: 1
 
 resources:
   requests:
