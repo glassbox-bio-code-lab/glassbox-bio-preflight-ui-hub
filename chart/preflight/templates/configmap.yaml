@@ -10,6 +10,12 @@
 {{- if and .Values.billing.enabled (not (.Values.billing.ubbagent.serviceName | trim)) }}
 {{- fail "Set billing.ubbagent.serviceName when billing.enabled=true." }}
 {{- end }}
+{{- $ipfto := (index .Values.addons "ipfto") | default dict -}}
+{{- $ipftoImage := (get $ipfto "image") | default dict -}}
+{{- $ipftoRunnerImage := "" -}}
+{{- if and (kindIs "map" $ipftoImage) (get $ipftoImage "repository") -}}
+  {{- $ipftoRunnerImage = include "preflight.image" $ipftoImage -}}
+{{- end -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -21,7 +27,6 @@ data:
   PORT: {{ .Values.service.port | quote }}
   K8S_INCLUSTER: "true"
   K8S_AUTH_DISABLED: {{ ternary "true" "false" .Values.app.authDisabled | quote }}
-  GBX_PUBLIC_VERIFICATION: {{ ternary "true" "false" (default true .Values.app.publicVerification) | quote }}
   K8S_COMMAND_RETRIES: "2"
   K8S_COMMAND_BACKOFF_MS: "400"
   GBX_INPUT_ROOT: {{ .Values.app.inputRoot | quote }}
@@ -43,6 +48,9 @@ data:
   GBX_MODULES_JSON: {{ default (toJson .Values.modules.registry) .Values.app.modulesJson | quote }}
   GBX_ADDONS_JSON: {{ default (toJson .Values.addons.registry) .Values.app.addonsJson | quote }}
   GBX_DEV_K8S_ADMIN_API: {{ ternary "true" "false" .Values.app.devAdminApi | quote }}
+  GBX_IPFTO_RUNNER_IMAGE: {{ default $ipftoRunnerImage .Values.app.ipftoRunnerImage | quote }}
+  GBX_IPFTO_SERVICE_ACCOUNT: {{ default ((get $ipfto "serviceAccountName") | default "") .Values.app.ipftoServiceAccount | quote }}
+  GBX_IPFTO_CONFIGMAP: {{ default ((get $ipfto "configMapName") | default "") .Values.app.ipftoConfigMap | quote }}
   UBBAGENT_ENABLED: {{ ternary "true" "false" .Values.billing.enabled | quote }}
   MARKETPLACE_REPORTING_SECRET: {{ .Values.billing.marketplaceReportingSecret | quote }}
   UBBAGENT_IMAGE: {{ include "preflight.image" .Values.billing.ubbagent.image | quote }}

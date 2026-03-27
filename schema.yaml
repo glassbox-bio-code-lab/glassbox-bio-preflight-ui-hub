@@ -50,6 +50,16 @@ properties:
     minimum: 1
     maximum: 65535
 
+  ingress.enabled:
+    type: boolean
+    title: Enable Ingress
+    default: false
+
+  ingress.className:
+    type: string
+    title: Ingress class name
+    default: ""
+
   app.authDisabled:
     type: boolean
     title: Disable API token auth
@@ -59,7 +69,13 @@ properties:
   app.authToken:
     type: string
     title: Operator API token
-    description: Required when API token auth is enabled. Use this token in the Preflight UI sidebar and for authenticated API calls.
+    description: Optional explicit operator API token. When left blank, the chart preserves an existing auth secret or generates a new admin token on first install.
+    default: ""
+
+  auth.existingSecret:
+    type: string
+    title: Existing auth secret
+    description: Existing Secret containing K8S_API_TOKENS JSON for the backend auth layer.
     default: ""
 
   persistence.size:
@@ -86,6 +102,25 @@ properties:
       storageClass:
         type: SSD
 
+  storage.type:
+    type: string
+    title: Shared storage backend
+    enum:
+      - pvc
+      - gcs
+    default: pvc
+
+  storage.gcs.bucket:
+    type: string
+    title: GCS bucket
+    description: Required when storage.type=gcs.
+    default: ""
+
+  storage.gcs.mountPath:
+    type: string
+    title: GCS mount path
+    default: /data
+
   app.runnerImage:
     type: string
     title: Default molecular audit runtime image
@@ -111,15 +146,30 @@ properties:
     title: Add-on registry override JSON
     default: ""
 
-  app.ipftoRunnerImage:
+  app.publicAppUrl:
     type: string
-    title: IP/FTO add-on runner image
+    title: Public app URL
     default: ""
 
-  addons.ipfto.projectsDir:
+  app.publicApiUrl:
     type: string
-    title: IP/FTO workspace root
-    description: Absolute path inside the shared volume where IP/FTO project workspaces live. Required for the add-on to resolve <project>/raw/step2a_structured_search artifacts.
+    title: Public API URL
+    default: ""
+
+  billing.enabled:
+    type: boolean
+    title: Enable marketplace billing sidecar for billable runs
+    default: false
+
+  billing.marketplaceReportingSecret:
+    type: string
+    title: Marketplace reporting secret
+    default: ""
+
+  billing.ubbagent.serviceName:
+    type: string
+    title: Marketplace service name
+    description: Required when billing.enabled=true.
     default: ""
 
   application.enabled:

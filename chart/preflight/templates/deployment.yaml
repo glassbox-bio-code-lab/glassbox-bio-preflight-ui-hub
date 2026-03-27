@@ -20,6 +20,27 @@ spec:
       {{- end }}
     spec:
       serviceAccountName: {{ include "preflight.serviceAccountName" . | quote }}
+      {{- if .Values.runtimeTools.enabled }}
+      initContainers:
+        - name: runtime-tools
+          image: {{ include "preflight.image" .Values.runtimeTools.image | quote }}
+          imagePullPolicy: {{ .Values.runtimeTools.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              apt-get update
+              apt-get install -y --no-install-recommends ca-certificates curl tar
+              rm -rf /var/lib/apt/lists/*
+              curl -fsSL -o /tmp/kubectl "https://dl.k8s.io/release/{{ .Values.runtimeTools.kubectlVersion }}/bin/linux/amd64/kubectl"
+              install -m 0755 /tmp/kubectl {{ .Values.runtimeTools.installPath | quote }}/kubectl
+              curl -fsSL -o /tmp/helm.tar.gz "https://get.helm.sh/helm-{{ .Values.runtimeTools.helmVersion }}-linux-amd64.tar.gz"
+              tar -xzf /tmp/helm.tar.gz -C /tmp
+              install -m 0755 /tmp/linux-amd64/helm {{ .Values.runtimeTools.installPath | quote }}/helm
+          volumeMounts:
+            - name: runtime-tools
+              mountPath: {{ .Values.runtimeTools.installPath | quote }}
+      {{- end }}
       containers:
         - name: preflight
           image: {{ include "preflight.image" .Values.image | quote }}
@@ -41,6 +62,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            {{- if .Values.runtimeTools.enabled }}
+            - name: PATH
+              value: {{ printf "%s:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" .Values.runtimeTools.installPath | quote }}
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /api/health
@@ -57,14 +82,28 @@ spec:
           volumeMounts:
             - name: data
               mountPath: {{ .Values.storage.gcs.mountPath | quote }}
+            {{- if .Values.runtimeTools.enabled }}
+            - name: runtime-tools
+              mountPath: {{ .Values.runtimeTools.installPath | quote }}
+              readOnly: true
+            {{- end }}
           {{- else }}
           volumeMounts:
             - name: data
               mountPath: /data
+            {{- if .Values.runtimeTools.enabled }}
+            - name: runtime-tools
+              mountPath: {{ .Values.runtimeTools.installPath | quote }}
+              readOnly: true
+            {{- end }}
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
+        {{- if .Values.runtimeTools.enabled }}
+        - name: runtime-tools
+          emptyDir: {}
+        {{- end }}
         {{- if eq .Values.storage.type "gcs" }}
         - name: data
           csi:

@@ -3,7 +3,7 @@ ARG GOLANG_BUILD_IMAGE=golang:1.25.8
 ARG HELM_VERSION=v3.20.1
 ARG KUBECTL_130_VERSION=v1.30.14
 ARG KUBECTL_131_VERSION=v1.31.14
-ARG MP_SERVICE_NAME=services/molecular-audit-core.endpoints.glassbox-bio-public.cloud.goog
+ARG MP_SERVICE_NAME=services/glassbox-bio-preflight-ui-hub.endpoints.glassbox-bio-public.cloud.goog
 
 FROM ${GOLANG_BUILD_IMAGE} AS kubectl-130-builder
 ARG KUBECTL_130_VERSION
@@ -27,10 +27,12 @@ RUN curl -fsSLo kubernetes-src.tar.gz "https://github.com/kubernetes/kubernetes/
 
 FROM ${GOLANG_BUILD_IMAGE} AS helm-builder
 ARG HELM_VERSION
-WORKDIR /out
-RUN curl -fsSLo helm.tar.gz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" \
-    && tar -xzf helm.tar.gz \
-    && install -D linux-amd64/helm /out/helm
+WORKDIR /src
+RUN curl -fsSLo helm-src.tar.gz "https://github.com/helm/helm/archive/refs/tags/${HELM_VERSION}.tar.gz" \
+    && tar -xzf helm-src.tar.gz --strip-components=1 \
+    && /usr/local/go/bin/go mod edit -require=google.golang.org/grpc@v1.79.3 \
+    && /usr/local/go/bin/go get google.golang.org/grpc@v1.79.3 google.golang.org/protobuf@v1.36.10 golang.org/x/oauth2@v0.34.0 \
+    && CGO_ENABLED=0 /usr/local/go/bin/go build -trimpath -ldflags="-s -w" -o /out/helm ./cmd/helm
 
 FROM ${DEPLOYER_BASE_IMAGE}
 ARG HELM_VERSION
@@ -41,6 +43,8 @@ LABEL com.googleapis.cloudmarketplace.product.service.name=${MP_SERVICE_NAME}
 
 RUN apt-get update \
     && apt-get dist-upgrade -y \
+    && apt-get install -y --no-install-recommends python3-pip \
+    && python3 -m pip install --no-cache-dir --upgrade "pyOpenSSL>=26,<27" \
     && apt-get purge -y python3-pip wget gnupg2 \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
@@ -59,13 +63,15 @@ RUN tar -czf /data/chart/chart-bundle.tar.gz -C /tmp/marketplace-main chart \
     && rm -rf /tmp/marketplace-main
 COPY schema.yaml /data/schema.yaml
 
-COPY apptest/deployer/preflight/ /tmp/marketplace-test/chart/
+COPY apptest/deployer/preflight/values.yaml /tmp/marketplace-test/chart/values.yaml
 RUN tar -czf /data-test/chart/chart-bundle.tar.gz -C /tmp/marketplace-test chart \
     && rm -rf /tmp/marketplace-test
 COPY apptest/deployer/schema.yaml /data-test/schema.yaml
+COPY deployer/marketplace-debug-deploy.sh /usr/local/bin/marketplace-debug-deploy.sh
+RUN chmod 0755 /usr/local/bin/marketplace-debug-deploy.sh
 
 ENV SCHEMA=/data/schema.yaml
 ENV WAIT_FOR_READY_TIMEOUT=1800
 ENV TESTER_TIMEOUT=1800
 
-ENTRYPOINT ["/bin/bash", "/bin/deploy.sh"]
+ENTRYPOINT ["/usr/local/bin/marketplace-debug-deploy.sh"]

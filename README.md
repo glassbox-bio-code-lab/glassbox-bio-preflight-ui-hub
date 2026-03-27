@@ -1,56 +1,81 @@
-# Customer Deploy Bundle
+# Glassbox Bio Preflight UI Hub
 
-This directory is the customer-facing deployment package for Glassbox Preflight.
+This repository is the customer-facing deployment bundle for the
+**Glassbox Bio Preflight UI Hub**.
 
-It is intended for the public repo where customer operators will:
+It packages the Helm chart, operator guide, sample bundle, and Marketplace
+support assets used to deploy the published Preflight images into a customer
+Kubernetes cluster. It does not contain substitute scientific workflows or
+fabricated scientific outputs.
 
-- pull the public preflight image from Artifact Registry
-- install the Helm chart into their own cluster
-- provide their own ingress, storage, and auth values
+## What Customers Use This Repo For
 
-## Layout
+- install the published Preflight UI with Helm
+- validate real customer bundles against the shipped contract
+- save certified inputs into cluster-backed storage
+- launch and monitor canonical Glassbox runs in Kubernetes
+- review certifications, logs, artifacts, and supported add-ons
 
-- `helm/glassbox-preflight/`: customer Helm chart
-- `examples/customer-values.yaml`: starter values overlay
+Preflight is an operator control surface over the canonical Glassbox execution
+stack. It does not invent missing scientific evidence, fabricate outputs, or
+replace the scientific runner.
 
-## Public Image
+## Repo Layout
 
-Default chart image:
+- `chart/preflight/`
+  Customer Helm chart for direct deployment.
+- `docs/USER_GUIDE.md`
+  Customer operator workflow guide.
+- `docs/Glassbox Bio Preflight UI — Architecture Diagram.png`
+  Architecture reference image.
+- `sample_input/`
+  Example bundle structure and reference files.
+- `apptest/`, `deployer/`, `schema.yaml`, `metadata.json`
+  Marketplace packaging and verification assets. They are included in this repo
+  but are not required for a standard Helm install.
 
-- `us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-preflight-ui-hub/glassbox-preflight:1.0.0`
+## Quick Start
 
-This public image does not bake `kubectl` or `helm` into the container image.
-The customer chart downloads runtime tools into a shared volume at pod startup
-through the `runtimeTools` init container.
-
-## Install
+1. Review `docs/USER_GUIDE.md` before installation.
+2. Choose a real operator token and set `app.authToken`.
+3. If you are installing outside Marketplace or AppRegistry and your cluster
+   does not support the `app.k8s.io/Application` CRD, set
+   `application.enabled=false`.
+4. Install the chart.
 
 ```bash
-helm upgrade --install glassbox-preflight \
-  ./helm/glassbox-preflight \
+helm upgrade --install glassbox-preflight ./chart/preflight \
   --namespace glassbox-preflight \
   --create-namespace \
-  -f ./examples/customer-values.yaml
+  --set app.authToken=REPLACE_WITH_REAL_TOKEN \
+  --set application.enabled=false
 ```
 
-## Customer Inputs
+## Deployment Notes
 
-Customers should review and override:
+- the chart deploys the published image references already pinned in
+  `chart/preflight/values.yaml`
+- `service.type` defaults to `ClusterIP` on port `8080`
+- auth is enabled by default; `app.authDisabled=true` is only supported for
+  trusted internal `ClusterIP` installs
+- the shared data contract is PVC-backed under `/data`
+- the chart includes a `runtime-tools` init container that stages `kubectl` and
+  `helm` into `/tools` because the runtime expects them to be available
+- add-ons run only after the core run outputs they depend on are present
 
-- `image.tag` or `image.digest`
-- `auth.tokensJson` or `auth.existingSecret`
-- `ingress.*`
-- `storage.*`
-- `app.publicAppUrl`
-- `app.publicApiUrl`
-- `app.entitlementUrl`
-- `app.entitlementAuthMode`
-- `app.runnerImage`
-- `app.runnerServiceAccount`
+## Support
 
-## Notes
+When opening a support request, include:
 
-- `application.enabled=false` by default because customer clusters should not
-  need the Kubernetes `Application` CRD.
-- `addons.ipfto.enabled=false` by default in the customer package.
-- Billing remains disabled by default.
+- product version
+- namespace
+- project ID
+- run ID if one exists
+- exact error text
+- relevant pod or job logs
+
+## Provenance And Integrity
+
+Preflight validates and orchestrates real uploaded inputs. If required inputs or
+evidence are missing, the correct outcome is an explicit failure or skip state,
+not fabricated substitute data.

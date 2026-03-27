@@ -7,7 +7,7 @@ metadata:
   labels:
     {{- include "preflight.labels" . | nindent 4 }}
   annotations:
-    marketplace.cloud.google.com/deploy-info: '{"partner_id":"qzC12XfQZs","product_id":"glassbox-bio-preflight-ui-hub","partner_name":"Glassbox Bio"}'
+    marketplace.cloud.google.com/deploy-info: '{"partner_id":"qzC12XfQZs","product_id":"glassbox-preflight","partner_name":"Glassbox Bio"}'
 spec:
   descriptor:
     type: glassbox-preflight
@@ -22,7 +22,7 @@ spec:
       - outputs
   selector:
     matchLabels:
-      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      {{- include "preflight.selectorLabels" . | nindent 6 }}
   addOwnerRef: true
   componentKinds:
     - group: ""
@@ -45,20 +45,4 @@ spec:
       kind: RoleBinding
     - group: rbac.authorization.k8s.io
       kind: ServiceAccount
-  notes: |-
-    ## Access the Preflight UI
-
-    ```bash
-    kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "preflight.fullname" . }} 8080:{{ .Values.service.port }}
-    ```
-
-    Open `http://127.0.0.1:8080`.
-
-    ## What this app does
-
-    This application provides the Glassbox Preflight UI for validation, job launch orchestration, and output browsing.
-
-    ## Runtime linkage
-
-    The preflight UI can launch canonical Molecular Audit jobs when `app.runnerImage` and the related runtime settings are configured.
 {{- end }}
