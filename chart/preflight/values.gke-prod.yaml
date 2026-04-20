@@ -1,0 +1,20 @@
+image:
+  repository: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-preflight-ui-hub/glassbox-preflight
+  tag: 1.0.0
+  digest: ""
+  pullPolicy: IfNotPresent
+
+app:
+  deploymentEnv: gke-prod
+  clusterProvider: gke
+  runtimeTarget: kubernetes
+  runnerImage: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-audit/glassbox-mol-audit:1.0.0
+  ipftoRunnerImage: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-ip-fto-screening/glassbox-ipfto:1.0.0
+
+addons:
+  ipfto:
+    image:
+      repository: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-ip-fto-screening/glassbox-ipfto
+      tag: 1.0.0
+      digest: ""
+      pullPolicy: IfNotPresent

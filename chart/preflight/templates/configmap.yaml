@@ -26,6 +26,9 @@ metadata:
 data:
   PORT: {{ .Values.service.port | quote }}
   K8S_INCLUSTER: "true"
+  GBX_DEPLOYMENT_ENV: {{ .Values.app.deploymentEnv | quote }}
+  GBX_CLUSTER_PROVIDER: {{ .Values.app.clusterProvider | quote }}
+  GBX_RUNTIME_TARGET: {{ .Values.app.runtimeTarget | quote }}
   K8S_AUTH_DISABLED: {{ ternary "true" "false" .Values.app.authDisabled | quote }}
   K8S_COMMAND_RETRIES: "2"
   K8S_COMMAND_BACKOFF_MS: "400"
@@ -33,6 +36,7 @@ data:
   GBX_OUTPUT_ROOT: {{ .Values.app.outputRoot | quote }}
   GBX_PUBLIC_APP_URL: {{ .Values.app.publicAppUrl | quote }}
   GBX_PUBLIC_API_URL: {{ .Values.app.publicApiUrl | quote }}
+  GBX_ALLOWED_ORIGINS: {{ .Values.app.allowedOrigins | quote }}
   GBX_ENTITLEMENT_URL: {{ .Values.app.entitlementUrl | quote }}
   GBX_ENTITLEMENT_AUTH_MODE: {{ .Values.app.entitlementAuthMode | quote }}
   GBX_ENTITLEMENT_AUDIENCE: {{ .Values.app.entitlementAudience | quote }}

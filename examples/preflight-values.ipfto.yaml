@@ -1,0 +1,13 @@
+addons:
+  ipfto:
+    enabled: true
+    serviceAccountName: gbx-ipfto-runner
+    configMapName: gbx-ipfto-addon
+    configData:
+      GBX_IPFTO_PRIOR_ART_PROVIDERS: google_patents_bq
+    secretRefs: []
+    projectsDir: ""
+
+app:
+  ipftoServiceAccount: gbx-ipfto-runner
+  ipftoConfigMap: gbx-ipfto-addon

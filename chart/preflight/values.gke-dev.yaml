@@ -1,0 +1,21 @@
+image:
+  repository: us-docker.pkg.dev/glassbox-marketplace-prod/gcr.io/glassbox-preflight-ui-hub/glassbox-preflight
+  tag: dev-ipfto-20260419-2053
+  digest: ""
+  pullPolicy: IfNotPresent
+
+app:
+  deploymentEnv: gke-dev
+  clusterProvider: gke
+  runtimeTarget: kubernetes
+  allowedOrigins: "*"
+  runnerImage: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-audit/glassbox-mol-audit:1.0.0-rc
+  ipftoRunnerImage: us-docker.pkg.dev/glassbox-marketplace-prod/gcr.io/glassbox-ipfto:dev-ipfto-20260419-2053
+
+addons:
+  ipfto:
+    image:
+      repository: us-docker.pkg.dev/glassbox-marketplace-prod/gcr.io/glassbox-ipfto
+      tag: dev-ipfto-20260419-2053
+      digest: ""
+      pullPolicy: IfNotPresent

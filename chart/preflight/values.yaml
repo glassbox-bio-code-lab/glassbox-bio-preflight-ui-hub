@@ -40,6 +40,9 @@ auth:
   tokensJson: ""
 
 app:
+  deploymentEnv: ""
+  clusterProvider: ""
+  runtimeTarget: kubernetes
   authDisabled: false
   publicVerification: true
   authToken: ""
@@ -47,6 +50,7 @@ app:
   outputRoot: /data/output
   publicAppUrl: ""
   publicApiUrl: ""
+  allowedOrigins: ""
   entitlementUrl: ""
   entitlementAuthMode: ""
   entitlementAudience: ""
@@ -54,6 +58,9 @@ app:
   runnerImage: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-audit/glassbox-mol-audit:1.0.0
   runnerServiceAccount: ""
   runnerAppFullname: ""
+  ipftoRunnerImage: ""
+  ipftoServiceAccount: ""
+  ipftoConfigMap: ""
   dataPvc: ""
   modulesJson: ""
   addonsJson: ""
@@ -100,74 +107,38 @@ modules:
 
 addons:
   registry:
-    - id: cim
-      title: Continuous Intelligence Monitoring
-      tagline: Customer-hosted follow-up monitoring against an existing core run
-      description: Runs as a separate Kubernetes Job and writes timestamped follow-up artifacts under followups/<timestamp>/.
-      accessTier: customer-addon
-      upgradeMessage: Install the CIM/Sentinel add-on image and namespace resources to unlock customer-hosted post-audit monitoring. Preflight currently supports airgap execution only.
-      outputsPrefix: followups
-      quickLinks: []
-      startEndpoint: /api/addons/cim/run
-      startLabel: Run Follow-Up
+    - id: ipfto
+      title: IP/FTO
+      tagline: Deterministic patent diligence with optional LLM reasoning over the retrieved patent corpus
+      description: Bootstraps its own IP/FTO workspace from the core run outputs, writes raw artifacts under raw/ipfto/, and writes synthesized report outputs under reports/. full mode adds LLM reasoning over deterministic patent evidence only; agentic browsing and uncontrolled live search remain disabled.
+      accessTier: premium-addon
+      upgradeMessage: Configure the IP/FTO runtime to unlock deterministic post-core patent diligence. The same module handles phase2a-only and LLM-assisted full mode against real core outputs.
+      outputsPrefix: raw/ipfto
+      quickLinks:
+        - path: reports/ipfto_report.html
+          label: IP/FTO Report (HTML)
+          openInNewTab: true
+        - path: reports/ipfto_findings.json
+          label: Findings (JSON)
+        - path: reports/ipfto_manifest.json
+          label: Run Manifest (JSON)
+        - path: raw/ipfto/verification/verification_summary.json
+          label: Verification Summary (JSON)
+      startEndpoint: /api/addons/ipfto/run
+      startLabel: Run IP/FTO
       requireRunId: true
       parametersSchema:
         type: object
-        title: Sentinel follow-up execution
+        title: IP/FTO execution
         properties:
           executionMode:
             type: string
             title: Execution mode
-            description: airgap is supported in the current preflight contract. Connector-backed modes remain blocked until explicit connector wiring is added.
+            description: phase2a_only runs deterministic patent evidence search plus claim similarity. full adds LLM reasoning over the same deterministic patent corpus only; it does not enable agentic browsing or uncontrolled live search.
             enum:
-              - airgap
-              - gcp_internal
-              - open_web
-            default: airgap
-          cadence:
-            type: string
-            title: Cadence
-            enum:
-              - manual
-              - weekly
-              - biweekly
-              - monthly
-            default: manual
-          briefFormat:
-            type: string
-            title: Brief format
-            enum:
-              - standard
-              - board_memo
-              - technical
-            default: standard
-          maxAlerts:
-            type: integer
-            title: Max alerts
-            minimum: 1
-            maximum: 100
-            default: 25
-          enrichmentEnabled:
-            type: boolean
-            title: Enable enrichment
-            default: false
-          bqTemplates:
-            type: array
-            title: BigQuery templates
-            items:
-              type: string
-            default:
-              - bq.patents.assignee_counts.v1
-              - bq.pmc.keyword_snippets.v1
-          cachePolicy:
-            type: string
-            title: Cache policy
-            enum:
-              - snapshot_required
-              - live_ok
-            default: snapshot_required
-        required:
-          - executionMode
+              - phase2a_only
+              - full
+            default: phase2a_only
       prereq:
         requiredFiles:
           - results/combined_unified_computational_outputs.json
@@ -175,49 +146,76 @@ addons:
         command:
           - python
           - -m
-          - glassbox.sentinel.run
+          - ipfto_module.addon_runner
+        args:
+          - --project-id
+          - "{projectId}"
+          - --run-id
+          - "{runId}"
+          - --output-root
+          - "{outputRoot}"
         env:
-          - name: GBX_SENTINEL_EXECUTION_MODE
+          - name: GBX_ADDON_NAME
+            value: ipfto
+          - name: GBX_ADDON_OUTPUT_SUBDIR
+            value: raw/ipfto
+          - name: GBX_IPFTO_MODE
             value: "{addonMode}"
-          - name: GBX_SENTINEL_CADENCE
-            value: "{cadence}"
-          - name: GBX_SENTINEL_BRIEF_FORMAT
-            value: "{briefFormat}"
-          - name: GBX_SENTINEL_MAX_ALERTS
-            value: "{maxAlerts}"
-          - name: GBX_SENTINEL_ENRICHMENT
-            value: "{enrichmentEnabled}"
-          - name: GBX_SENTINEL_BQ_TEMPLATES
-            value: "{bqTemplates}"
-          - name: GBX_SENTINEL_CACHE_POLICY
-            value: "{cachePolicy}"
       install:
-        serviceAccountName: gbx-cim-runner
-        configMapName: gbx-cim-addon
+        serviceAccountName: gbx-ipfto-runner
+        configMapName: gbx-ipfto-addon
+        runnerImageEnv: GBX_IPFTO_RUNNER_IMAGE
         runnerImageKey: runnerImage
+        projectsDirKey: projectsDir
         readyModes:
-          - airgap
-        blockedModes:
-          - mode: gcp_internal
-            code: connector_not_wired
-            message: gcp_internal requires connector-service wiring that is not part of the current preflight chart.
-          - mode: open_web
-            code: connector_not_wired
-            message: open_web requires connector-service and egress-policy wiring that is not part of the current preflight chart.
+          - phase2a_only
+          - full
+        requiredConfig: []
+        requiredSecrets:
+          - label: LLM credentials
+            anyOfEnvNames:
+              - OPENAI_API_KEY
+              - OPENROUTER_API_KEY
+              - ANTHROPIC_API_KEY
+              - GEMINI_API_KEY
+              - GOOGLE_API_KEY
+            modes:
+              - full
+            code: llm_credentials_missing
+            message: Full IP/FTO mode requires an add-on secret that provides LLM credentials for reasoning over the deterministic patent corpus.
   # Preferred for new add-ons: supply install-time resource values under
   # addons.installations.<addonId>. The chart ranges over addons.registry and
   # renders generic ServiceAccount/ConfigMap resources for any enabled entry.
   # Legacy per-addon keys remain supported for internal installs.
   installations: {}
-  cim:
+  ipfto:
     enabled: false
-    serviceAccountName: gbx-cim-runner
-    configMapName: gbx-cim-addon
+    serviceAccountName: gbx-ipfto-runner
+    configMapName: gbx-ipfto-addon
     serviceAccountAnnotations: {}
     configData: {}
+    # Optional non-secret runtime config for the IP/FTO add-on. Example:
+    # configData:
+    #   GBX_GOOGLE_PATENTS_SYNC_ENABLED: "1"
+    #   GBX_IPFTO_PRIOR_ART_PROVIDERS: google_patents_bq
+    # Optional secret refs injected directly into the add-on Job environment.
+    # Example:
+    # secretRefs:
+    #   - secretName: gbx-ipfto-runtime
+    #     env:
+    #       - name: OPENAI_API_KEY
+    #         key: OPENAI_API_KEY
+    #       - name: SERPER_API_KEY
+    #         key: SERPER_API_KEY
+    #         optional: true
+    #       - name: GBX_GOOGLE_CLOUD_PROJECT
+    #         key: GBX_GOOGLE_CLOUD_PROJECT
     secretRefs: []
+    # Optional persistent workspace root. If unset, the add-on bootstraps a
+    # run-scoped workspace under 07_addons/ipfto/_workspace/.
+    projectsDir: ""
     image:
-      repository: glassbox/sentinel
+      repository: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-ip-fto-screening/glassbox-ipfto
       tag: 1.0.0
       digest: ""
       pullPolicy: IfNotPresent

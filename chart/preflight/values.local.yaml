@@ -1,0 +1,26 @@
+image:
+  repository: glassbox-local/preflight
+  tag: dev
+  digest: ""
+  pullPolicy: IfNotPresent
+
+app:
+  deploymentEnv: local
+  clusterProvider: local-k8s
+  runtimeTarget: kubernetes
+  publicAppUrl: http://localhost:8080
+  publicApiUrl: http://localhost:8080
+  allowedOrigins: http://localhost:8080,http://127.0.0.1:8080,http://localhost:3000,http://127.0.0.1:3000,http://localhost:4173,http://127.0.0.1:4173
+  runnerImage: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-audit/glassbox-mol-audit:1.0.0
+  ipftoRunnerImage: glassbox-local/ipfto:dev
+
+application:
+  enabled: false
+
+addons:
+  ipfto:
+    image:
+      repository: glassbox-local/ipfto
+      tag: dev
+      digest: ""
+      pullPolicy: IfNotPresent

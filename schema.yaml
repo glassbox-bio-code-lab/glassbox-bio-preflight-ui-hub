@@ -66,6 +66,24 @@ properties:
     description: Only disable auth for trusted internal ClusterIP installs. Externally exposed service types should keep auth enabled.
     default: false
 
+  app.deploymentEnv:
+    type: string
+    title: Deployment environment label
+    description: Optional environment label exposed to the runtime, for example local, gke-dev, or gke-prod.
+    default: ""
+
+  app.clusterProvider:
+    type: string
+    title: Cluster provider label
+    description: Optional cluster provider label exposed to the runtime, for example local-k8s or gke.
+    default: ""
+
+  app.runtimeTarget:
+    type: string
+    title: Runtime target label
+    description: Runtime execution target metadata exposed to the Preflight app.
+    default: kubernetes
+
   app.authToken:
     type: string
     title: Operator API token
@@ -136,6 +154,22 @@ properties:
     title: Existing molecular audit app fullname
     default: ""
 
+  app.ipftoRunnerImage:
+    type: string
+    title: IP/FTO runtime image override
+    description: Optional explicit IP/FTO worker image. Leave blank to use the chart-managed add-on image.
+    default: ""
+
+  app.ipftoServiceAccount:
+    type: string
+    title: IP/FTO runtime service account override
+    default: ""
+
+  app.ipftoConfigMap:
+    type: string
+    title: IP/FTO add-on ConfigMap override
+    default: ""
+
   app.modulesJson:
     type: string
     title: Module registry override JSON
@@ -146,6 +180,43 @@ properties:
     title: Add-on registry override JSON
     default: ""
 
+  addons.installations.ipfto.enabled:
+    type: boolean
+    title: Enable the IP/FTO add-on install resources
+    description: Creates the ServiceAccount and ConfigMap that let the existing Preflight runtime expose and launch the IP/FTO module.
+    default: false
+
+  addons.installations.ipfto.runnerImage:
+    type: string
+    title: IP/FTO runner image
+    default: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-ip-fto-screening/glassbox-ipfto:1.0.0
+
+  addons.installations.ipfto.configData.GBX_IPFTO_PROJECTS_DIR:
+    type: string
+    title: IP/FTO projects directory
+    default: /data/projects
+
+  addons.installations.ipfto.configData.GBX_INPUT_ROOT:
+    type: string
+    title: Shared input root for IP/FTO
+    default: /data/input
+
+  addons.installations.ipfto.configData.GBX_OUTPUT_ROOT:
+    type: string
+    title: Shared output root for IP/FTO
+    default: /data/output
+
+  addons.ipfto.enabled:
+    type: boolean
+    title: Enable legacy IP/FTO add-on values
+    description: Supported for parity with the hosted Preflight runtime contract. Prefer addons.installations.ipfto for new installs.
+    default: false
+
+  addons.ipfto.projectsDir:
+    type: string
+    title: Optional IP/FTO persistent workspace root
+    default: ""
+
   app.publicAppUrl:
     type: string
     title: Public app URL
@@ -154,6 +225,13 @@ properties:
   app.publicApiUrl:
     type: string
     title: Public API URL
+    description: Base origin for the API, without an appended /api suffix. The frontend appends /api/* paths itself.
+    default: ""
+
+  app.allowedOrigins:
+    type: string
+    title: Allowed browser origins
+    description: Comma-separated or JSON-array CORS allowlist for browser origins that may call the API directly. Use * only for controlled dev/test environments.
     default: ""
 
   billing.enabled:

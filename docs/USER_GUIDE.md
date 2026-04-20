@@ -37,6 +37,11 @@ The current UI surface includes:
 7. Use `Reports` to review saved certifications and output artifacts.
 8. Use `Add-ons` only after the required core outputs already exist.
 
+For deployments that enable the `ipfto` module, Preflight remains the operator
+control hub. The UI can surface `ipfto` as an optional runtime module and
+launch the published worker image without embedding the scientific logic into
+the UI package itself.
+
 ## Deployment Assumptions
 
 - set `app.authToken` during installation unless you are running a trusted
@@ -50,6 +55,15 @@ The current UI surface includes:
 - the chart stages `kubectl` and `helm` into `/tools` through the
   `runtime-tools` init container because the runtime expects them to be
   available inside the pod
+- deployment-specific settings should be selected with the chart overlays:
+  `chart/preflight/values.local.yaml`, `chart/preflight/values.gke-dev.yaml`,
+  or `chart/preflight/values.gke-prod.yaml`
+- the runtime now exposes `GBX_DEPLOYMENT_ENV`, `GBX_CLUSTER_PROVIDER`, and
+  `GBX_RUNTIME_TARGET` so the same source code can distinguish local-cluster
+  testing from GKE deployment without forking the application code
+- local Kubernetes testing is supported through the repo `Makefile` and
+  `local-k8s/README.md`, which build the real Preflight and `ipfto` images and
+  install the same customer chart into a `k3d` cluster
 - `sample_input/` is a reference bundle layout only; it must not be treated as
   substitute scientific evidence for a real customer run
 
@@ -183,6 +197,21 @@ The page lets you:
 - check whether prerequisite core outputs are present
 - inspect each add-on contract and execution readiness
 - launch a supported add-on when it is ready
+
+The current supported `ipfto` customer add-on contract is:
+
+- launch path: `Run IP/FTO`
+- endpoint: `/api/addons/ipfto/run`
+- supported execution modes:
+  - `phase2a_only`
+  - `full` when the add-on secret contract provides supported LLM credentials
+- required upstream files:
+  - `results/combined_unified_computational_outputs.json`
+- expected quick links:
+  - `reports/ipfto_report.html`
+  - `reports/ipfto_findings.json`
+  - `reports/ipfto_manifest.json`
+  - `raw/ipfto/verification/verification_summary.json`
 
 Blocked or locked add-ons should stay visible with an explicit reason. They must
 not fabricate findings to appear runnable.
