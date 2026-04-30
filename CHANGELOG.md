@@ -16,3 +16,4 @@
 - Converted the IP/FTO add-on overlay to the preferred `addons.installations.ipfto` values path.
 - Removed placeholder Google Cloud project and hardcoded LLM provider/model/base URL defaults from the generic customer-facing IP/FTO overlay.
 - Updated README, user guide, and local Makefile references so the free Preflight base install remains separate from the optional paid IP/FTO add-on wiring.
+- Updated the GKE dev Preflight image tag to `dev-preflight-20260430-0140`, which resolves to a single annotated manifest in the production Artifact Registry.

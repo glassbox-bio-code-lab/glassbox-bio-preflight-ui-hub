@@ -1,6 +1,6 @@
 image:
   repository: us-docker.pkg.dev/glassbox-marketplace-prod/gcr.io/glassbox-preflight-ui-hub/glassbox-preflight
-  tag: dev-ipfto-20260423-0057
+  tag: dev-preflight-20260430-0140
   digest: ""
   pullPolicy: IfNotPresent
 
