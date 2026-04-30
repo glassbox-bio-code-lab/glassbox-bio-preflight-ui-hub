@@ -1,7 +1,7 @@
 image:
   repository: us-docker.pkg.dev/glassbox-marketplace-prod/gcr.io/glassbox-preflight-ui-hub/glassbox-preflight
-  tag: dev-preflight-20260430-0633
-  digest: sha256:3a25cf8e431466017261f5d02a6e103befc8dfc11492aab6426b43d771d8641d
+  tag: dev-preflight-20260430-0734
+  digest: sha256:0398869f23672cb673ed772fb199892a265d9bc64fc7a6839dd49e6121a73c4d
   pullPolicy: IfNotPresent
 
 app:
