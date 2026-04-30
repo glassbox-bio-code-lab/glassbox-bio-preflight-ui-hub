@@ -43,6 +43,12 @@ metadata:
     app.kubernetes.io/component: {{ printf "addon-%s" $addonId | quote }}
 data:
   {{ $runnerImageKey }}: {{ $runnerImage | quote }}
+  {{- if eq $addonId "ipfto" }}
+  GBX_ENTITLEMENT_URL: {{ default $.Values.app.entitlementUrl (get $configData "GBX_ENTITLEMENT_URL") | quote }}
+  GBX_ENTITLEMENT_AUDIENCE: {{ default $.Values.app.entitlementAudience (get $configData "GBX_ENTITLEMENT_AUDIENCE") | quote }}
+  GBX_ENTITLEMENT_AUTH_MODE: {{ default $.Values.app.entitlementAuthMode (get $configData "GBX_ENTITLEMENT_AUTH_MODE") | quote }}
+  GBX_ENTITLEMENT_TIMEOUT_SEC: {{ default $.Values.app.entitlementTimeoutSec (get $configData "GBX_ENTITLEMENT_TIMEOUT_SEC") | quote }}
+  {{- end }}
   {{- if $readyModes }}
   supportedModes: {{ join "," $readyModes | quote }}
   {{- end }}
@@ -56,7 +62,9 @@ data:
   {{- end }}
   {{- end }}
   {{- range $key, $value := $configData }}
+  {{- if not (and (eq $addonId "ipfto") (has $key (list "GBX_ENTITLEMENT_URL" "GBX_ENTITLEMENT_AUDIENCE" "GBX_ENTITLEMENT_AUTH_MODE" "GBX_ENTITLEMENT_TIMEOUT_SEC"))) }}
   {{ $key }}: {{ if or (kindIs "slice" $value) (kindIs "map" $value) }}{{ toJson $value | quote }}{{ else }}{{ printf "%v" $value | quote }}{{ end }}
+  {{- end }}
   {{- end }}
 ---
 {{- end }}

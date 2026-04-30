@@ -111,7 +111,9 @@ addons:
       title: IP/FTO
       tagline: Deterministic patent diligence with optional LLM reasoning over the retrieved patent corpus
       description: Bootstraps its own IP/FTO workspace from the core run outputs, writes raw artifacts under raw/ipfto/, and writes synthesized report outputs under reports/. full mode adds LLM reasoning over deterministic patent evidence only; agentic browsing and uncontrolled live search remain disabled.
+      billable: true
       accessTier: premium-addon
+      ubbMetricName: ipfto_integrated_run
       upgradeMessage: Configure the IP/FTO runtime to unlock deterministic post-core patent diligence. The same module handles phase2a-only and LLM-assisted full mode against real core outputs.
       outputsPrefix: raw/ipfto
       quickLinks:
@@ -138,7 +140,30 @@ addons:
             enum:
               - phase2a_only
               - full
-            default: phase2a_only
+            default: full
+          llmProvider:
+            type: string
+            title: LLM provider
+            description: Optional full-mode override. Leave blank to use the deployment-configured default.
+            enum:
+              - ""
+              - openrouter
+              - openai
+              - anthropic
+              - gemini
+              - vertex_ai
+              - local
+            default: ""
+          llmModel:
+            type: string
+            title: LLM model
+            description: Optional full-mode override. Leave blank to use the deployment-configured default.
+            default: ""
+          llmBaseUrl:
+            type: string
+            title: LLM base URL
+            description: Optional full-mode override. Leave blank to use the deployment-configured default.
+            default: ""
       prereq:
         requiredFiles:
           - results/combined_unified_computational_outputs.json
@@ -161,6 +186,12 @@ addons:
             value: raw/ipfto
           - name: GBX_IPFTO_MODE
             value: "{addonMode}"
+          - name: LLM_PROVIDER
+            value: "{llmProvider}"
+          - name: LLM_MODEL
+            value: "{llmModel}"
+          - name: LLM_BASE_URL
+            value: "{llmBaseUrl}"
       install:
         serviceAccountName: gbx-ipfto-runner
         configMapName: gbx-ipfto-addon
@@ -170,7 +201,52 @@ addons:
         readyModes:
           - phase2a_only
           - full
-        requiredConfig: []
+        requiredConfig:
+          - label: Default LLM provider
+            key: LLM_PROVIDER
+            env: LLM_PROVIDER
+            modes:
+              - full
+            code: llm_runtime_config_missing
+            message: Full IP/FTO mode requires a deployment-configured default LLM provider in the add-on config.
+          - label: Default LLM model
+            key: LLM_MODEL
+            env: LLM_MODEL
+            modes:
+              - full
+            code: llm_runtime_config_missing
+            message: Full IP/FTO mode requires a deployment-configured default LLM model in the add-on config.
+          - label: Default LLM base URL
+            key: LLM_BASE_URL
+            env: LLM_BASE_URL
+            modes:
+              - full
+            code: llm_runtime_config_missing
+            message: Full IP/FTO mode requires a deployment-configured default LLM base URL in the add-on config.
+          - label: Google Patents BigQuery sync
+            key: GBX_GOOGLE_PATENTS_SYNC_ENABLED
+            env: GBX_GOOGLE_PATENTS_SYNC_ENABLED
+            modes:
+              - phase2a_only
+              - full
+            code: patent_source_config_missing
+            message: IP/FTO requires a configured deterministic patent source; set GBX_GOOGLE_PATENTS_SYNC_ENABLED and GBX_GOOGLE_CLOUD_PROJECT for Google Patents BigQuery.
+          - label: Google Cloud project for patent BigQuery
+            key: GBX_GOOGLE_CLOUD_PROJECT
+            env: GBX_GOOGLE_CLOUD_PROJECT
+            modes:
+              - phase2a_only
+              - full
+            code: patent_source_config_missing
+            message: IP/FTO requires a Google Cloud project with BigQuery job access for deterministic Google Patents evidence retrieval.
+          - label: Entitlement seal service URL
+            key: GBX_ENTITLEMENT_URL
+            env: GBX_ENTITLEMENT_URL
+            modes:
+              - phase2a_only
+              - full
+            code: seal_runtime_config_missing
+            message: IP/FTO requires GBX_ENTITLEMENT_URL so run provenance can be sealed through the entitlement service.
         requiredSecrets:
           - label: LLM credentials
             anyOfEnvNames:
@@ -197,7 +273,11 @@ addons:
     # Optional non-secret runtime config for the IP/FTO add-on. Example:
     # configData:
     #   GBX_GOOGLE_PATENTS_SYNC_ENABLED: "1"
+    #   GBX_GOOGLE_CLOUD_PROJECT: customer-gcp-project
     #   GBX_IPFTO_PRIOR_ART_PROVIDERS: google_patents_bq
+    #   LLM_PROVIDER: provider-name
+    #   LLM_MODEL: provider/model-name
+    #   LLM_BASE_URL: https://provider.example/v1
     # Optional secret refs injected directly into the add-on Job environment.
     # Example:
     # secretRefs:
@@ -244,15 +324,16 @@ billing:
   marketplaceReportingSecret: ""
   ubbagent:
     image:
-      repository: gcr.io/REPLACE_PROJECT/ubbagent
-      tag: latest
+      repository: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-audit/glassbox-mol-audit/ubbagent
+      tag: "1.0.2"
       digest: ""
       pullPolicy: IfNotPresent
     localPort: "4567"
     metricName: glassbox_mol_audit_run
     metricNameStandard: standard_audit_run
     metricNameDeep: deep_audit_run
-    serviceName: ""
+    metricNameIpftoIntegrated: ipfto_integrated_run
+    serviceName: molecular-audit-core.endpoints.glassbox-bio-public.cloud.goog
 
 application:
   enabled: true

@@ -1,0 +1,38 @@
+# Optional paid add-on overlay for Glassbox Bio Molecular IP/FTO Screening.
+#
+# Preflight UI itself is free. This overlay only installs the Kubernetes wiring
+# that lets the Preflight UI expose and launch the paid IP/FTO worker image after
+# a real Molecular Audit core run has produced the required upstream artifacts.
+#
+# Before using the add-on, set the real Google Cloud project that has access to
+# deterministic patent evidence sources, for example:
+#
+#   --set-string addons.installations.ipfto.configData.GBX_GOOGLE_CLOUD_PROJECT=<customer-gcp-project>
+#
+# For full mode, create the referenced Secret with real LLM credentials and set
+# deployment-specific LLM_PROVIDER, LLM_MODEL, and LLM_BASE_URL values. Without
+# those values, full mode must remain blocked by readiness checks.
+
+addons:
+  installations:
+    ipfto:
+      enabled: true
+      serviceAccountName: gbx-ipfto-runner
+      configMapName: gbx-ipfto-addon
+      configData:
+        GBX_GOOGLE_PATENTS_SYNC_ENABLED: "1"
+        GBX_IPFTO_PRIOR_ART_PROVIDERS: google_patents_bq
+      secretRefs:
+        - secretName: gbx-ipfto-runtime
+          env:
+            - name: OPENROUTER_API_KEY
+              key: OPENROUTER_API_KEY
+              optional: true
+            - name: LLM_API_KEY
+              key: OPENROUTER_API_KEY
+              optional: true
+      projectsDir: ""
+
+app:
+  ipftoServiceAccount: gbx-ipfto-runner
+  ipftoConfigMap: gbx-ipfto-addon

@@ -1,8 +1,8 @@
 SHELL := /bin/bash
 
 ROOT_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-PREFLIGHT_SOURCE_DIR ?= /home/weslinux/Desktop/marketplace_phase5_isolated-0.99.5-gbx-beta/marketplace_phase5_isolated-0.99.5-gbx-beta/preflight_v2
-IPFTO_SOURCE_ROOT ?= /home/weslinux/Desktop/cbtri_local_proto_lite
+PREFLIGHT_SOURCE_DIR ?=
+IPFTO_SOURCE_ROOT ?=
 
 K3D ?= k3d
 DOCKER ?= docker
@@ -22,7 +22,7 @@ LOCAL_PREFLIGHT_IMAGE := $(LOCAL_PREFLIGHT_REPOSITORY):$(LOCAL_PREFLIGHT_TAG)
 LOCAL_IPFTO_IMAGE := $(LOCAL_IPFTO_REPOSITORY):$(LOCAL_IPFTO_TAG)
 
 LOCAL_VALUES := $(ROOT_DIR)/chart/preflight/values.local.yaml
-IPFTO_VALUES := $(ROOT_DIR)/examples/preflight-values.ipfto.yaml
+IPFTO_VALUES := $(ROOT_DIR)/examples/addons/ipfto-values.yaml
 LOCAL_CORE_RUNNER_REF ?=
 PORT_FORWARD_PORT ?= 8080
 LOCAL_CORE_RUNNER_SET := $(if $(LOCAL_CORE_RUNNER_REF),--set-string app.runnerImage=$(LOCAL_CORE_RUNNER_REF))
@@ -89,6 +89,7 @@ dev-k8s-reset: dev-k8s-down dev-k8s-up
 
 dev-k8s-build-preflight:
 	@command -v "$(DOCKER)" >/dev/null || { echo "ERROR: docker is required for dev-k8s-build-preflight."; exit 2; }
+	@test -n "$(PREFLIGHT_SOURCE_DIR)" || { echo "ERROR: set PREFLIGHT_SOURCE_DIR to the preflight_v2 source checkout."; exit 2; }
 	@test -f "$(PREFLIGHT_SOURCE_DIR)/Dockerfile" || { echo "ERROR: missing $(PREFLIGHT_SOURCE_DIR)/Dockerfile"; exit 2; }
 	@"$(DOCKER)" build \
 		-f "$(PREFLIGHT_SOURCE_DIR)/Dockerfile" \
@@ -97,6 +98,7 @@ dev-k8s-build-preflight:
 
 dev-k8s-build-ipfto:
 	@command -v "$(DOCKER)" >/dev/null || { echo "ERROR: docker is required for dev-k8s-build-ipfto."; exit 2; }
+	@test -n "$(IPFTO_SOURCE_ROOT)" || { echo "ERROR: set IPFTO_SOURCE_ROOT to the repo containing ipfto_module/Dockerfile."; exit 2; }
 	@test -f "$(IPFTO_SOURCE_ROOT)/ipfto_module/Dockerfile" || { echo "ERROR: missing $(IPFTO_SOURCE_ROOT)/ipfto_module/Dockerfile"; exit 2; }
 	@"$(DOCKER)" build \
 		-f "$(IPFTO_SOURCE_ROOT)/ipfto_module/Dockerfile" \

@@ -64,6 +64,9 @@ the UI package itself.
 - local Kubernetes testing is supported through the repo `Makefile` and
   `local-k8s/README.md`, which build the real Preflight and `ipfto` images and
   install the same customer chart into a `k3d` cluster
+- the optional paid IP/FTO install overlay lives at
+  `examples/addons/ipfto-values.yaml`; the base free Preflight install does not
+  enable paid IP/FTO resources by default
 - `sample_input/` is a reference bundle layout only; it must not be treated as
   substitute scientific evidence for a real customer run
 
@@ -200,6 +203,7 @@ The page lets you:
 
 The current supported `ipfto` customer add-on contract is:
 
+- install overlay: `examples/addons/ipfto-values.yaml`
 - launch path: `Run IP/FTO`
 - endpoint: `/api/addons/ipfto/run`
 - supported execution modes:

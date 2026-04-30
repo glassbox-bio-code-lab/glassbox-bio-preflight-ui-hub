@@ -15,10 +15,17 @@ data:
     metrics:
       - name: {{ .Values.billing.ubbagent.metricNameStandard | quote }}
         type: int
+        passthrough: {}
         endpoints:
           - name: servicecontrol
       - name: {{ .Values.billing.ubbagent.metricNameDeep | quote }}
         type: int
+        passthrough: {}
+        endpoints:
+          - name: servicecontrol
+      - name: {{ .Values.billing.ubbagent.metricNameIpftoIntegrated | quote }}
+        type: int
+        passthrough: {}
         endpoints:
           - name: servicecontrol
     endpoints:

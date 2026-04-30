@@ -38,8 +38,8 @@ replace the scientific runner.
   Architecture reference image.
 - `sample_input/`
   Example bundle structure and reference files.
-- `examples/preflight-values.ipfto.yaml`
-  Example Helm overlay that enables the `ipfto` add-on resources.
+- `examples/addons/ipfto-values.yaml`
+  Optional paid add-on Helm overlay that enables the `ipfto` install resources.
 - `chart/preflight/values.local.yaml`
   Local Kubernetes overlay for Docker, `kind`, `k3d`, or Docker Desktop testing.
 - `chart/preflight/values.gke-dev.yaml`
@@ -96,7 +96,7 @@ helm upgrade --install glassbox-preflight ./chart/preflight \
   --namespace glassbox-preflight \
   --create-namespace \
   -f ./chart/preflight/values.local.yaml \
-  -f ./examples/preflight-values.ipfto.yaml \
+  -f ./examples/addons/ipfto-values.yaml \
   --set app.authToken=REPLACE_WITH_REAL_TOKEN
 ```
 
@@ -107,7 +107,8 @@ helm upgrade --install glassbox-preflight ./chart/preflight \
   --namespace glassbox-preflight \
   --create-namespace \
   -f ./chart/preflight/values.gke-prod.yaml \
-  -f ./examples/preflight-values.ipfto.yaml \
+  -f ./examples/addons/ipfto-values.yaml \
+  --set-string addons.installations.ipfto.configData.GBX_GOOGLE_CLOUD_PROJECT=REPLACE_WITH_REAL_PROJECT \
   --set app.authToken=REPLACE_WITH_REAL_TOKEN
 ```
 
@@ -124,9 +125,9 @@ make dev-k8s-port-forward
 That workflow builds the real hosted Preflight image, builds the real `ipfto`
 worker image, imports both into a local `k3d` cluster, and installs this chart
 with `chart/preflight/values.local.yaml` plus
-`examples/preflight-values.ipfto.yaml`.
+`examples/addons/ipfto-values.yaml`.
 
-See [local-k8s/README.md](/home/weslinux/Desktop/glassbox-bio-preflight-ui-hub/local-k8s/README.md)
+See [local-k8s/README.md](local-k8s/README.md)
 for the full target list.
 
 ## Deployment Notes
@@ -153,12 +154,20 @@ This repo is the only customer deployment integration point required for the
 resources that let the published Preflight runtime expose the module in the UI
 and launch the worker image.
 
-To enable it, install with an overlay such as
-`examples/preflight-values.ipfto.yaml`. That overlay:
+To enable it, install with the optional paid add-on overlay:
+`examples/addons/ipfto-values.yaml`. That overlay:
 
 - enables the `ipfto` add-on resources
 - points Preflight at the published `ipfto` runner image
 - provides the shared input, output, and projects paths consumed by the worker
+
+The overlay intentionally does not include a fake Google Cloud project or
+hardcoded LLM defaults. Set the real deterministic patent-source project at
+install time with:
+
+```bash
+--set-string addons.installations.ipfto.configData.GBX_GOOGLE_CLOUD_PROJECT=REPLACE_WITH_REAL_PROJECT
+```
 
 The current hosted runtime supports two `ipfto` execution modes:
 

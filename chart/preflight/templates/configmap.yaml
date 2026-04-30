@@ -63,6 +63,7 @@ data:
   UBBAGENT_METRIC_NAME: {{ .Values.billing.ubbagent.metricName | quote }}
   UBBAGENT_METRIC_NAME_STANDARD: {{ .Values.billing.ubbagent.metricNameStandard | quote }}
   UBBAGENT_METRIC_NAME_DEEP: {{ .Values.billing.ubbagent.metricNameDeep | quote }}
+  UBBAGENT_METRIC_NAME_IPFTO_INTEGRATED: {{ .Values.billing.ubbagent.metricNameIpftoIntegrated | quote }}
   GBX_FEEDBACK_WEBHOOK_URL: {{ .Values.app.feedback.webhookUrl | quote }}
   GBX_FEEDBACK_WEBHOOK_BEARER_TOKEN: {{ .Values.app.feedback.webhookBearerToken | quote }}
   GBX_FEEDBACK_WEBHOOK_SHARED_SECRET: {{ .Values.app.feedback.webhookSharedSecret | quote }}

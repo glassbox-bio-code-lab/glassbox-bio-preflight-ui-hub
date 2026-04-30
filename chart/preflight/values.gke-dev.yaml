@@ -1,6 +1,6 @@
 image:
   repository: us-docker.pkg.dev/glassbox-marketplace-prod/gcr.io/glassbox-preflight-ui-hub/glassbox-preflight
-  tag: dev-ipfto-20260419-2053
+  tag: dev-ipfto-20260423-0057
   digest: ""
   pullPolicy: IfNotPresent
 
@@ -8,14 +8,34 @@ app:
   deploymentEnv: gke-dev
   clusterProvider: gke
   runtimeTarget: kubernetes
+  authDisabled: true
   allowedOrigins: "*"
-  runnerImage: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-audit/glassbox-mol-audit:1.0.0-rc
-  ipftoRunnerImage: us-docker.pkg.dev/glassbox-marketplace-prod/gcr.io/glassbox-ipfto:dev-ipfto-20260419-2053
+  entitlementUrl: https://glassbox-seal-662656813262.us-central1.run.app
+  entitlementAuthMode: google
+  entitlementAudience: https://glassbox-seal-662656813262.us-central1.run.app
+  runnerImage: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-audit/glassbox-mol-audit:1.0.2
+  ipftoRunnerImage: us-docker.pkg.dev/glassbox-marketplace-prod/gcr.io/glassbox-ipfto:dev-ipfto-20260422-1947
 
 addons:
   ipfto:
+    enabled: true
+    configData:
+      GBX_GOOGLE_PATENTS_SYNC_ENABLED: "1"
+      GBX_GOOGLE_CLOUD_PROJECT: glassbox-marketplace-prod
+      GBX_IPFTO_PRIOR_ART_PROVIDERS: google_patents_bq,patent_uspto_odp
+      LLM_PROVIDER: openrouter
+      LLM_MODEL: openrouter/openai/gpt-5.4
+      LLM_BASE_URL: https://openrouter.ai/api/v1
+    secretRefs:
+      - secretName: gbx-ipfto-runtime
+        env:
+          - name: OPENROUTER_API_KEY
+            key: OPENROUTER_API_KEY
+          - name: LLM_API_KEY
+            key: OPENROUTER_API_KEY
+            optional: true
     image:
       repository: us-docker.pkg.dev/glassbox-marketplace-prod/gcr.io/glassbox-ipfto
-      tag: dev-ipfto-20260419-2053
+      tag: dev-ipfto-20260422-1947
       digest: ""
       pullPolicy: IfNotPresent
