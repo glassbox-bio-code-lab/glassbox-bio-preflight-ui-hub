@@ -13,7 +13,7 @@ app:
   entitlementUrl: https://glassbox-seal-662656813262.us-central1.run.app
   entitlementAuthMode: google
   entitlementAudience: https://glassbox-seal-662656813262.us-central1.run.app
-  runnerImage: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-audit/glassbox-mol-audit:1.0.2
+  runnerImage: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-audit/glassbox-mol-audit:1.0.0
   ipftoRunnerImage: us-docker.pkg.dev/glassbox-bio-public/glassbox-bio-molecular-ip-fto-screening/glassbox-ipfto@sha256:1aa1ff530f01febba84260d44aaf29d5846d3458e69e7730a8f22e566aa05680
 
 addons:
